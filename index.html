@@ -1202,11 +1202,12 @@ const MATCHES = [
 ];
 
 const FEED_POSTS = [
-  {id:'f1',type:'bogey_alert',playerId:'rastani',team:'palmer',time:'2m ago',text:'<strong>Rastani</strong> bogeyed Hole 7. Shotgun obligation created! 🍺',shotgun:true,reactions:{laughing:['matt','grant','adam'],'beer':['jordan','marc','webby','jake','justin'],'fire':['mark'],'skull':['john','jordanb']}},
-  {id:'f2',type:'birdie_alert',playerId:'matt',team:'nicklaus',time:'8m ago',text:'<strong>Matt & Grant</strong> birdied Hole 6! Team Nicklaus is heating up 🔥',shotgun:false,reactions:{fire:['marc','webby'],'golf':['jake','justin','rastani','mark']}},
-  {id:'f3',type:'score_event',playerId:'system',team:'system',time:'14m ago',text:'<strong>Jordan B & John</strong> vs <strong>Rastani & Mark</strong> — Palmer now leads 2UP through 7 holes.',shotgun:false,reactions:{fire:['mark','rastani','marc'],'skull':['jordanb','john'],'eyes':['matt','grant']}},
-  {id:'f4',type:'shotgun_video',playerId:'jordanb',team:'nicklaus',time:'31m ago',text:'<strong>Jordan B</strong> completed his shotgun obligation from Hole 3. That was impressive (and disgusting) 🎥',shotgun:false,reactions:{laughing:['matt','adam','jordan','john','marc','webby','jake','justin','rastani','mark'],'beer':['grant'],'fire':['mark']}},
-  {id:'f5',type:'score_event',playerId:'system',team:'system',time:'44m ago',text:'<strong>Round 1 has tipped off!</strong> 3 matches underway. May the best team win! ⛳',shotgun:false,reactions:{fire:['matt','grant','adam','jordan','jordanb','john','marc','webby','jake','justin','rastani','mark']}},
+  {id:'f0',type:'bogey_alert',playerId:'matt',team:'nicklaus',time:'Just now',text:'<strong>Matthew Hoke</strong> 3-putted Hole 5. Shotgun obligation created! 🍺',shotgun:true,reactions:{}},
+  {id:'f1',type:'bogey_alert',playerId:'marc',team:'palmer',time:'2m ago',text:'<strong>Marc Schmalz</strong> 3-putted Hole 8. Shotgun obligation created! 🍺',shotgun:true,reactions:{laughing:['grant','adam'],'beer':['jordan','webby','jake','justin'],'skull':['jordanb','john']}},
+  {id:'f2',type:'birdie_alert',playerId:'grant',team:'nicklaus',time:'9m ago',text:'<strong>Matt & Grant</strong> birdied Hole 3! Team Nicklaus is heating up 🔥',shotgun:false,reactions:{fire:['marc','webby'],'golf':['jake','justin','rastani','mark']}},
+  {id:'f3',type:'score_event',playerId:'system',team:'system',time:'15m ago',text:'<strong>Jordan B & John</strong> vs <strong>Rastani & Mark</strong> — Palmer now leads 2UP through 7 holes.',shotgun:false,reactions:{fire:['mark','rastani','marc'],'skull':['jordanb','john'],'eyes':['matt','grant']}},
+  {id:'f4',type:'shotgun_video',playerId:'jordanb',team:'nicklaus',time:'32m ago',text:'<strong>Jordan B</strong> completed his shotgun obligation from Hole 3. That was impressive (and disgusting) 🎥',shotgun:false,reactions:{laughing:['matt','adam','jordan','john','marc','webby','jake','justin','rastani','mark'],'beer':['grant'],'fire':['mark']}},
+  {id:'f5',type:'score_event',playerId:'system',team:'system',time:'45m ago',text:'<strong>Round 1 has tipped off!</strong> May the best team win! ⛳',shotgun:false,reactions:{fire:['matt','grant','adam','jordan','jordanb','john','marc','webby','jake','justin','rastani','mark']}},
 ];
 
 const PLAYER_HOLES = {matt:8,grant:8,marc:8,webby:8,adam:8,jordan:8,jake:8,justin:8,jordanb:9,john:9,rastani:9,mark:9};
@@ -1243,8 +1244,8 @@ const S = {
   matchScores: JSON.parse(JSON.stringify({m1:MATCHES[0].scores,m2:MATCHES[1].scores,m3:MATCHES[2].scores})),
   reactions: JSON.parse(JSON.stringify(FEED_POSTS.reduce((acc,p)=>{acc[p.id]=p.reactions;return acc;},{}))),
   playerHoles: {...PLAYER_HOLES},
-  shotgunQueue: [{player:'rastani',hole:7,team:'palmer'}],
-  pendingShotguns: {rastani:true},
+  shotgunQueue: [{player:'matt',hole:5,team:'nicklaus'},{player:'marc',hole:8,team:'palmer'}],
+  pendingShotguns: {matt:true,marc:true},
   courseComboId: 'antlers_whitetail', courseLocked: false,
   captainTab: 'course', captainRoundTab: 'r1',
   pairings: {
@@ -2002,15 +2003,15 @@ function renderMap() {
 const REACTION_EMOJIS = {laughing:'😂',beer:'🍻',fire:'🔥',skull:'💀',golf:'⛳',eyes:'👀'};
 
 function renderFeed() {
-  const hasPending = S.shotgunQueue.length > 0;
+  const myObligation = S.shotgunQueue.find(s => s.player === S.user.id);
   return `
-    ${hasPending?`<div style="margin:12px 12px 0;background:linear-gradient(135deg,#FFF7ED,#FFEDD5);border:2px solid #FED0A0;border-radius:var(--r);padding:14px 16px;display:flex;align-items:center;gap:12px">
+    ${myObligation?`<div style="margin:12px 12px 0;background:linear-gradient(135deg,#FFF7ED,#FFEDD5);border:2px solid #FED0A0;border-radius:var(--r);padding:14px 16px;display:flex;align-items:center;gap:12px">
       <div style="font-size:28px;animation:bounce-beer 1s ease-in-out infinite">🍺</div>
       <div>
         <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:900;color:var(--orange)">SHOTGUN PENDING</div>
-        <div style="font-size:13px;color:#903010;font-weight:500">Rastani owes a shotgun from Hole 7</div>
+        <div style="font-size:13px;color:#903010;font-weight:500">You 3-putted Hole ${myObligation.hole}. Time to drink! 🍺</div>
       </div>
-      <button onclick="openShotgunModal('rastani',7)" style="margin-left:auto;background:var(--orange);color:#fff;border:none;border-radius:10px;padding:8px 14px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:800;cursor:pointer">Record</button>
+      <button onclick="openShotgunModal('${S.user.id}',${myObligation.hole},'3-putt')" style="margin-left:auto;background:var(--orange);color:#fff;border:none;border-radius:10px;padding:8px 14px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:800;cursor:pointer">Record</button>
     </div>`:''}
     <div class="section-header">Live Feed</div>
     ${FEED_POSTS.map(post=>renderFeedPost(post)).join('')}
@@ -2266,8 +2267,9 @@ function newPost() {
 
 // ── SHOTGUN ──
 function checkShotgunQueue() {
-  if (S.shotgunQueue.length > 0 && S.user.id === S.shotgunQueue[0].player) {
-    setTimeout(()=>openShotgunModal(S.user.id, S.shotgunQueue[0].hole), 1200);
+  const myObligation = S.shotgunQueue.find(s => s.player === S.user.id);
+  if (myObligation) {
+    setTimeout(()=>openShotgunModal(S.user.id, myObligation.hole, '3-putt'), 1200);
   }
 }
 
