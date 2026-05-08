@@ -837,6 +837,10 @@ body{font-family:'Barlow',-apple-system,BlinkMacSystemFont,sans-serif;background
 /* ══════════════════════════════════════════
    PERRY PARK CUP — LOGIN REDESIGN 2026
 ══════════════════════════════════════════ */
+/* Fix: align-items:center on #login shrinks flex children — force stretch */
+#ll-create,#ll-signin{width:100% !important;align-self:stretch !important;box-sizing:border-box !important}
+#ca-1,#ca-2,#ca-3,#ca-4{width:100% !important;box-sizing:border-box !important}
+#ll-land{align-self:stretch !important}
 @keyframes ppc-breathe{0%,100%{opacity:1}50%{opacity:.72}}
 @keyframes ppc-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
 @keyframes ppc-fadein{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
@@ -951,8 +955,10 @@ body{font-family:'Barlow',-apple-system,BlinkMacSystemFont,sans-serif;background
 /* Pin keys refinement */
 .pin-key{border-radius:16px !important;background:rgba(255,255,255,.11) !important;border-color:rgba(255,255,255,.14) !important;color:#fff !important}
 .pin-key:active{background:rgba(200,160,48,.22) !important;border-color:rgba(200,160,48,.4) !important;color:#E8BE40 !important}
-#ca-2 .login-card{padding-top:28px !important}
-#ca-2 .ca-step-label{font-size:17px !important;color:rgba(255,255,255,.8) !important;margin-bottom:4px !important}
+#ca-2 .login-card{padding-top:24px !important}
+#ca-2 .ca-step-label{font-size:17px !important;color:rgba(255,255,255,.8) !important;margin-bottom:12px !important}
+#ca-2 .pin-pad{display:grid !important;grid-template-columns:repeat(3,1fr) !important;gap:10px !important;width:100% !important}
+#ca-2 .pin-key{height:60px !important;min-height:60px !important;font-size:26px !important;border-radius:14px !important}
 .ll-back{color:rgba(255,255,255,.38) !important}
 .si-no-account{color:rgba(255,255,255,.32) !important}
 .si-no-account span{color:rgba(200,160,48,.75) !important}
