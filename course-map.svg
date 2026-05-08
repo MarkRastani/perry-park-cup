@@ -1,0 +1,242 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 700" shape-rendering="geometricPrecision">
+<defs>
+  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0D3320"/><stop offset="100%" stop-color="#1A5E40"/></linearGradient>
+  <linearGradient id="fairwayGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4CAF74"/><stop offset="100%" stop-color="#3D9660"/></linearGradient>
+  <linearGradient id="waterGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#2B85C8"/><stop offset="100%" stop-color="#1A5E96"/></linearGradient>
+  <linearGradient id="waterGrad2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#3490C8"/><stop offset="100%" stop-color="#205A8A"/></linearGradient>
+  <linearGradient id="greenGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5DC880"/><stop offset="100%" stop-color="#44A062"/></linearGradient>
+  <linearGradient id="clubGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#C9A84C"/><stop offset="100%" stop-color="#8B6914"/></linearGradient>
+  <filter id="glow"><feGaussianBlur stdDeviation="2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <filter id="softblur"><feGaussianBlur stdDeviation="3"/></filter>
+  <filter id="lightshadow"><feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.3"/></filter>
+</defs>
+
+<!-- ═══════════════ BACKGROUND TERRAIN ═══════════════ -->
+<rect width="500" height="700" fill="url(#sky)"/>
+
+<!-- Terrain variation -->
+<ellipse cx="80"  cy="100" rx="90"  ry="70"  fill="#0F3D24" opacity=".5"/>
+<ellipse cx="420" cy="120" rx="75"  ry="60"  fill="#0F3D24" opacity=".5"/>
+<ellipse cx="50"  cy="320" rx="65"  ry="100" fill="#0F3D24" opacity=".5"/>
+<ellipse cx="455" cy="300" rx="55"  ry="90"  fill="#0F3D24" opacity=".5"/>
+<ellipse cx="80"  cy="580" rx="80"  ry="70"  fill="#0F3D24" opacity=".5"/>
+<ellipse cx="430" cy="560" rx="70"  ry="75"  fill="#0F3D24" opacity=".5"/>
+<ellipse cx="250" cy="680" rx="120" ry="50"  fill="#0F3D24" opacity=".4"/>
+
+<!-- ═══════════════ ANTLERS COURSE — FRONT 9 (top half) ═══════════════ -->
+
+<!-- H1 fairway — par 4, starts near clubhouse bottom, goes up-right -->
+<polygon points="268,295 282,295 310,240 296,238" fill="#4CAF74" opacity=".85"/>
+<ellipse cx="303" cy="234" rx="13" ry="10" fill="url(#greenGrad)"/>
+<ellipse cx="292" cy="256" rx="5"  ry="4"  fill="#D4B896" opacity=".9"/><!-- bunker -->
+
+<!-- H2 fairway — par 3, short hole top-right -->
+<polygon points="318,222 328,224 338,185 328,183" fill="#4CAF74" opacity=".85"/>
+<ellipse cx="333" cy="180" rx="11" ry="9"  fill="url(#greenGrad)"/>
+
+<!-- H3 fairway — par 5, long, top going left -->
+<polygon points="340,175 350,168 316,115 306,122" fill="#4CAF74" opacity=".85"/>
+<polygon points="306,122 316,115 278,100 270,108" fill="#4CAF74" opacity=".85"/>
+<ellipse cx="273" cy="104" rx="13" ry="10" fill="url(#greenGrad)"/>
+<ellipse cx="300" cy="118" rx="4"  ry="3"  fill="#D4B896" opacity=".9"/>
+
+<!-- H4 fairway — par 4, top center going left -->
+<polygon points="262,100 272,96  228,86  220,90" fill="#4CAF74" opacity=".85"/>
+<ellipse cx="220" cy="87"  rx="12" ry="10" fill="url(#greenGrad)"/>
+
+<!-- H5 fairway — par 4, top going further left -->
+<polygon points="212,87  220,82  170,82  162,88" fill="#4CAF74" opacity=".85"/>
+<ellipse cx="162" cy="85"  rx="12" ry="9"  fill="url(#greenGrad)"/>
+<ellipse cx="192" cy="84"  rx="5"  ry="4"  fill="#D4B896" opacity=".9"/>
+
+<!-- H6 fairway — par 3, short left -->
+<polygon points="150,88  158,82  116,110 124,116" fill="#4CAF74" opacity=".85"/>
+<ellipse cx="118" cy="114" rx="11" ry="9"  fill="url(#greenGrad)"/>
+
+<!-- H7 fairway — par 5, left side going down -->
+<polygon points="110,118 120,112 92,168  82,174" fill="#4CAF74" opacity=".85"/>
+<polygon points="82,174  92,168  88,218  78,220" fill="#4CAF74" opacity=".85"/>
+<ellipse cx="82"  cy="222" rx="13" ry="10" fill="url(#greenGrad)"/>
+<ellipse cx="88"  cy="195" rx="5"  ry="4"  fill="#D4B896" opacity=".9"/>
+
+<!-- H8 fairway — par 4, lower left going right -->
+<polygon points="78,226  90,226  112,268 100,270" fill="#4CAF74" opacity=".85"/>
+<ellipse cx="106" cy="272" rx="13" ry="10" fill="url(#greenGrad)"/>
+<ellipse cx="90"  cy="246" rx="5"  ry="4"  fill="#D4B896" opacity=".9"/>
+
+<!-- H9 fairway — par 4, returning to clubhouse -->
+<polygon points="110,274 120,270 168,276 166,286" fill="#4CAF74" opacity=".85"/>
+<ellipse cx="172" cy="281" rx="12" ry="10" fill="url(#greenGrad)"/>
+
+<!-- MAIN LAKE — Antlers Course central feature -->
+<ellipse cx="205" cy="178" rx="80" ry="62" fill="url(#waterGrad)" opacity=".9"/>
+<ellipse cx="205" cy="178" rx="80" ry="62" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="1.5"/>
+<!-- Shimmer -->
+<ellipse cx="180" cy="162" rx="30" ry="10" fill="rgba(255,255,255,.1)" transform="rotate(-20,180,162)"/>
+<ellipse cx="225" cy="192" rx="18" ry="6"  fill="rgba(255,255,255,.07)" transform="rotate(15,225,192)"/>
+<text x="205" y="182" text-anchor="middle" font-family="Georgia,serif" font-style="italic" font-size="11" fill="rgba(255,255,255,.35)" letter-spacing="1">Lake</text>
+
+<!-- ═══════════════ ANTLERS / WHITETAIL DIVIDER ═══════════════ -->
+<line x1="40" y1="305" x2="460" y2="305" stroke="rgba(212,175,55,.25)" stroke-width="1" stroke-dasharray="8,5"/>
+
+<!-- ═══════════════ WHITETAIL COURSE — BACK 9 (bottom half) ═══════════════ -->
+
+<!-- H10 fairway — par 4, starts below clubhouse, goes lower-left -->
+<polygon points="200,315 214,315 202,358 188,358" fill="#52B878" opacity=".85"/>
+<ellipse cx="193" cy="362" rx="12" ry="10" fill="url(#greenGrad)"/>
+
+<!-- H11 fairway — par 3, lower left short -->
+<polygon points="184,364 192,360 155,380 148,386" fill="#52B878" opacity=".85"/>
+<ellipse cx="146" cy="388" rx="11" ry="9"  fill="url(#greenGrad)"/>
+
+<!-- H12 fairway — par 5, long lower going bottom-left -->
+<polygon points="140,390 150,384 122,428 112,432" fill="#52B878" opacity=".85"/>
+<polygon points="112,432 122,428 108,472 98,470"  fill="#52B878" opacity=".85"/>
+<ellipse cx="100" cy="474" rx="13" ry="10" fill="url(#greenGrad)"/>
+<ellipse cx="114" cy="450" rx="5"  ry="4"  fill="#D4B896" opacity=".9"/>
+
+<!-- H13 fairway — par 4, bottom left turning right -->
+<polygon points="100,478 112,476 145,506 134,510" fill="#52B878" opacity=".85"/>
+<ellipse cx="138" cy="512" rx="13" ry="10" fill="url(#greenGrad)"/>
+
+<!-- H14 fairway — par 4, bottom going right -->
+<polygon points="142,514 150,508 210,518 208,528" fill="#52B878" opacity=".85"/>
+<ellipse cx="212" cy="522" rx="13" ry="10" fill="url(#greenGrad)"/>
+<ellipse cx="178" cy="512" rx="6"  ry="4"  fill="#D4B896" opacity=".9"/>
+
+<!-- H15 fairway — par 3, short going up-right -->
+<polygon points="218,518 224,512 264,504 260,514" fill="#52B878" opacity=".85"/>
+<ellipse cx="266" cy="508" rx="11" ry="9"  fill="url(#greenGrad)"/>
+
+<!-- H16 fairway — par 5, bottom right -->
+<polygon points="272,506 280,502 330,478 326,468" fill="#52B878" opacity=".85"/>
+<polygon points="326,468 334,474 364,434 354,430" fill="#52B878" opacity=".85"/>
+<ellipse cx="358" cy="428" rx="13" ry="10" fill="url(#greenGrad)"/>
+<ellipse cx="335" cy="472" rx="5"  ry="4"  fill="#D4B896" opacity=".9"/>
+
+<!-- H17 fairway — par 4, right side going up -->
+<polygon points="360,424 370,420 372,374 360,374" fill="#52B878" opacity=".85"/>
+<ellipse cx="363" cy="370" rx="12" ry="10" fill="url(#greenGrad)"/>
+
+<!-- H18 fairway — par 4, returning to clubhouse -->
+<polygon points="364,366 372,360 330,322 318,326" fill="#52B878" opacity=".85"/>
+<ellipse cx="314" cy="328" rx="13" ry="10" fill="url(#greenGrad)"/>
+<ellipse cx="344" cy="342" rx="5"  ry="4"  fill="#D4B896" opacity=".9"/>
+
+<!-- Back 9 water features -->
+<path d="M92,430 Q110,420 125,432 Q130,445 118,455 Q100,460 88,448 Z" fill="url(#waterGrad2)" opacity=".85"/>
+<path d="M92,430 Q110,420 125,432 Q130,445 118,455 Q100,460 88,448 Z" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="1"/>
+
+<path d="M340,388 Q358,382 368,392 Q372,404 360,410 Q344,414 336,404 Z" fill="url(#waterGrad2)" opacity=".8"/>
+<path d="M340,388 Q358,382 368,392 Q372,404 360,410 Q344,414 336,404 Z" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="1"/>
+
+<!-- ═══════════════ CLUBHOUSE COMPLEX ═══════════════ -->
+<rect x="205" y="290" width="80" height="34" rx="8" fill="rgba(0,0,0,.45)"/>
+<rect x="207" y="292" width="76" height="30" rx="7" fill="rgba(212,175,55,.2)" stroke="#C9A84C" stroke-width="1.5"/>
+<text x="245" y="305" text-anchor="middle" font-family="'Barlow Condensed',Georgia,sans-serif" font-size="9" font-weight="800" fill="#F9C74F" letter-spacing=".8">CLUBHOUSE</text>
+<text x="245" y="316" text-anchor="middle" font-family="Georgia,sans-serif" font-size="7" fill="rgba(249,199,79,.6)" letter-spacing=".3">Pro Shop · Restaurant</text>
+
+<!-- Practice Range -->
+<rect x="142" y="292" width="46" height="18" rx="4" fill="rgba(0,0,0,.3)"/>
+<rect x="143" y="293" width="44" height="16" rx="3" fill="rgba(76,175,116,.15)" stroke="rgba(76,175,116,.4)" stroke-width="1"/>
+<text x="165" y="304" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="7.5" font-weight="700" fill="rgba(255,255,255,.45)" letter-spacing=".5">PRACTICE</text>
+
+<!-- Cart path -->
+<path d="M275,295 Q288,268 304,237" fill="none" stroke="rgba(180,150,100,.2)" stroke-width="2" stroke-dasharray="3,4"/>
+<path d="M208,290 Q188,286 172,282" fill="none" stroke="rgba(180,150,100,.2)" stroke-width="2" stroke-dasharray="3,4"/>
+<path d="M208,324 Q200,342 194,364" fill="none" stroke="rgba(180,150,100,.2)" stroke-width="2" stroke-dasharray="3,4"/>
+<path d="M285,320 Q300,324 318,328" fill="none" stroke="rgba(180,150,100,.2)" stroke-width="2" stroke-dasharray="3,4"/>
+
+<!-- ═══════════════ HOLE NUMBER BADGES ═══════════════ -->
+<!-- FRONT 9 — gold badges -->
+<!-- H1 -->
+<circle cx="303" cy="234" r="9" fill="#D4AF37" filter="url(#lightshadow)"/>
+<text x="303" y="238" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="9" font-weight="900" fill="#fff">1</text>
+<!-- H2 -->
+<circle cx="333" cy="180" r="8" fill="#D4AF37"/>
+<text x="333" y="184" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="9" font-weight="900" fill="#fff">2</text>
+<!-- H3 -->
+<circle cx="273" cy="104" r="9" fill="#D4AF37"/>
+<text x="273" y="108" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="9" font-weight="900" fill="#fff">3</text>
+<!-- H4 -->
+<circle cx="220" cy="87"  r="8" fill="#D4AF37"/>
+<text x="220" y="91"  text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="9" font-weight="900" fill="#fff">4</text>
+<!-- H5 -->
+<circle cx="162" cy="85"  r="8" fill="#D4AF37"/>
+<text x="162" y="89"  text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="9" font-weight="900" fill="#fff">5</text>
+<!-- H6 -->
+<circle cx="118" cy="114" r="8" fill="#D4AF37"/>
+<text x="118" y="118" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="9" font-weight="900" fill="#fff">6</text>
+<!-- H7 -->
+<circle cx="82"  cy="222" r="9" fill="#D4AF37"/>
+<text x="82"  y="226" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="9" font-weight="900" fill="#fff">7</text>
+<!-- H8 -->
+<circle cx="106" cy="272" r="9" fill="#D4AF37"/>
+<text x="106" y="276" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="9" font-weight="900" fill="#fff">8</text>
+<!-- H9 -->
+<circle cx="172" cy="281" r="8" fill="#D4AF37"/>
+<text x="172" y="285" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="9" font-weight="900" fill="#fff">9</text>
+
+<!-- BACK 9 — lighter gold badges -->
+<!-- H10 -->
+<circle cx="193" cy="362" r="9" fill="#B8973A"/>
+<text x="193" y="366" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="8" font-weight="900" fill="#fff">10</text>
+<!-- H11 -->
+<circle cx="146" cy="388" r="9" fill="#B8973A"/>
+<text x="146" y="392" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="8" font-weight="900" fill="#fff">11</text>
+<!-- H12 -->
+<circle cx="100" cy="474" r="9" fill="#B8973A"/>
+<text x="100" y="478" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="8" font-weight="900" fill="#fff">12</text>
+<!-- H13 -->
+<circle cx="138" cy="512" r="9" fill="#B8973A"/>
+<text x="138" y="516" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="8" font-weight="900" fill="#fff">13</text>
+<!-- H14 -->
+<circle cx="212" cy="522" r="9" fill="#B8973A"/>
+<text x="212" y="526" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="8" font-weight="900" fill="#fff">14</text>
+<!-- H15 -->
+<circle cx="266" cy="508" r="9" fill="#B8973A"/>
+<text x="266" y="512" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="8" font-weight="900" fill="#fff">15</text>
+<!-- H16 -->
+<circle cx="358" cy="428" r="9" fill="#B8973A"/>
+<text x="358" y="432" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="8" font-weight="900" fill="#fff">16</text>
+<!-- H17 -->
+<circle cx="363" cy="370" r="9" fill="#B8973A"/>
+<text x="363" y="374" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="8" font-weight="900" fill="#fff">17</text>
+<!-- H18 -->
+<circle cx="314" cy="328" r="9" fill="#B8973A"/>
+<text x="314" y="332" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="8" font-weight="900" fill="#fff">18</text>
+
+<!-- ═══════════════ COURSE LABELS ═══════════════ -->
+<!-- Front 9 label -->
+<rect x="16" y="60" width="88" height="26" rx="5" fill="rgba(0,0,0,.4)"/>
+<text x="60" y="71" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="8" font-weight="700" fill="#F9A825" letter-spacing="1.5">ANTLERS</text>
+<text x="60" y="81" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="8" fill="rgba(255,255,255,.5)" letter-spacing=".5">Holes 1–9</text>
+
+<!-- Back 9 label -->
+<rect x="16" y="340" width="98" height="26" rx="5" fill="rgba(0,0,0,.4)"/>
+<text x="65" y="351" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="8" font-weight="700" fill="#60A5FA" letter-spacing="1.5">WHITETAIL</text>
+<text x="65" y="361" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="8" fill="rgba(255,255,255,.5)" letter-spacing=".5">Holes 10–18</text>
+
+<!-- Par reference -->
+<rect x="396" y="60" width="90" height="56" rx="5" fill="rgba(0,0,0,.4)"/>
+<text x="441" y="73" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="8" font-weight="700" fill="rgba(255,255,255,.6)" letter-spacing="1">PAR</text>
+<text x="441" y="86" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="13" font-weight="900" fill="#F9A825">4·3·5</text>
+<text x="441" y="98" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="8" fill="rgba(255,255,255,.4)">4·4·3·5·4·4</text>
+<text x="441" y="110" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="11" font-weight="900" fill="#F9A825">72</text>
+
+<!-- ═══════════════ TOP HEADER ═══════════════ -->
+<rect x="0" y="0" width="500" height="44" fill="rgba(0,0,0,.5)"/>
+<text x="250" y="16" text-anchor="middle" font-family="'Barlow Condensed',Georgia,sans-serif" font-size="11" font-weight="700" fill="rgba(212,175,55,.7)" letter-spacing="3">PERRY PARK GOLF RESORT</text>
+<text x="250" y="32" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="14" font-weight="900" fill="#fff" letter-spacing="-0.5">Perry Park Cup 2026</text>
+
+<!-- Compass rose -->
+<text x="470" y="660" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="18" font-weight="900" fill="rgba(255,255,255,.3)">N</text>
+<line x1="470" y1="664" x2="470" y2="684" stroke="rgba(255,255,255,.2)" stroke-width="1.5"/>
+<polygon points="470,640 466,660 474,660" fill="rgba(255,255,255,.25)"/>
+
+<!-- Scale indicator -->
+<line x1="20"  y1="676" x2="80"  y2="676" stroke="rgba(255,255,255,.3)" stroke-width="2"/>
+<line x1="20"  y1="672" x2="20"  y2="680" stroke="rgba(255,255,255,.3)" stroke-width="1.5"/>
+<line x1="80"  y1="672" x2="80"  y2="680" stroke="rgba(255,255,255,.3)" stroke-width="1.5"/>
+<text x="50"  y="690" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="8" fill="rgba(255,255,255,.35)">~500 yds</text>
+</svg>

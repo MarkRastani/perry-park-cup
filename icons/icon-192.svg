@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <rect width="192" height="192" rx="40" fill="#0B3D2E"/>
+  <circle cx="96" cy="78" r="28" fill="none" stroke="#C9A84C" stroke-width="5"/>
+  <line x1="96" y1="106" x2="96" y2="148" stroke="#C9A84C" stroke-width="5" stroke-linecap="round"/>
+  <line x1="72" y1="148" x2="120" y2="148" stroke="#C9A84C" stroke-width="5" stroke-linecap="round"/>
+  <text x="96" y="84" text-anchor="middle" font-family="Georgia, serif" font-weight="bold" font-size="22" fill="#F9A825">PPC</text>
+</svg>
