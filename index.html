@@ -751,6 +751,12 @@ body{font-family:'Barlow',-apple-system,BlinkMacSystemFont,sans-serif;background
 .ll-back{text-align:center;color:rgba(255,255,255,.4);font-size:14px;font-weight:600;cursor:pointer;padding:14px;margin-top:2px}
 .ll-error{color:#F8A0A0;font-size:12px;text-align:center;margin-top:10px;min-height:18px;font-weight:600}
 
+/* ── SIGN IN DROPDOWN ── */
+.si-select{width:100%;padding:15px 16px;border-radius:15px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);color:#fff;font-family:'Barlow',sans-serif;font-size:16px;font-weight:600;outline:none;-webkit-appearance:none;appearance:none;cursor:pointer;margin-bottom:4px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='rgba(255,255,255,.4)' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 16px center}
+.si-select option{background:#0B3020;color:#fff}
+.si-no-account{text-align:center;margin-top:18px;font-size:13px;color:rgba(255,255,255,.35);font-weight:500}
+.si-no-account span{color:rgba(255,255,255,.65);font-weight:700;cursor:pointer;text-decoration:underline;-webkit-tap-highlight-color:transparent}
+
 /* ── CREATE ACCOUNT ── */
 .ca-dots{display:flex;gap:6px;justify-content:center;padding:10px 0 16px}
 .ca-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.18);transition:all .25s}
@@ -851,8 +857,10 @@ body{font-family:'Barlow',-apple-system,BlinkMacSystemFont,sans-serif;background
     <!-- SIGN IN -->
     <div id="ll-signin" style="display:none">
       <div class="login-card">
-        <div class="login-card-title">Who are you?</div>
-        <div class="player-grid" id="signin-grid"></div>
+        <div class="login-card-title">Sign In</div>
+        <select id="signin-select" class="si-select" onchange="onSignInSelect(this.value)">
+          <option value="">— Select your name —</option>
+        </select>
         <div class="pin-section" id="signin-pin-sec">
           <div class="pin-who" id="signin-pin-who"></div>
           <div class="pin-dots">
@@ -874,6 +882,9 @@ body{font-family:'Barlow',-apple-system,BlinkMacSystemFont,sans-serif;background
             <div class="pin-key del" onclick="siPinKey('del')">⌫</div>
           </div>
           <div class="ll-error" id="signin-error"></div>
+        </div>
+        <div class="si-no-account">
+          Not on the list? <span onclick="showCreateAccount()">Create an account →</span>
         </div>
       </div>
       <div class="ll-back" onclick="showLanding()">← Back</div>
@@ -1322,30 +1333,24 @@ function showSignIn() {
 }
 
 function buildSignInGrid() {
-  const hasClaimed = PLAYERS.some(p => getProfile(p.id));
-  const players = hasClaimed ? PLAYERS.filter(p => getProfile(p.id)) : PLAYERS;
-  document.getElementById('signin-grid').innerHTML = players.length === 0
-    ? '<div style="text-align:center;color:rgba(255,255,255,.4);padding:20px;font-size:13px">No accounts yet — create one first.</div>'
-    : players.map(p => {
-        const pic = getProfilePic(p.id);
-        const emoji = getPlayerAvatar(p);
-        const av = pic ? `<img src="${pic}" style="width:38px;height:38px;border-radius:50%;object-fit:cover;">`
-                  : emoji ? `<span class="player-av-emoji">${emoji}</span>`
-                  : p.initials;
-        return `<div class="player-btn ${p.team}" id="pbtn-${p.id}" onclick="selectSignInPlayer('${p.id}')">
-          <div class="player-avatar-sm">${av}</div>
-          <div><div class="player-btn-name">${p.name}</div><div class="player-btn-team">${TEAMS[p.team].short}</div></div>
-        </div>`;
-      }).join('');
+  const claimed = PLAYERS.filter(p => { const pr = getProfile(p.id); return pr && pr.claimed; });
+  const select = document.getElementById('signin-select');
+  if (!select) return;
+  select.innerHTML = '<option value="">— Select your name —</option>' +
+    claimed.map(p => `<option value="${p.id}">${p.name} · ${TEAMS[p.team].short}</option>`).join('');
+  select.value = '';
   document.getElementById('signin-pin-sec').classList.remove('visible');
   document.getElementById('signin-error').textContent = '';
+}
+
+function onSignInSelect(id) {
+  if (!id) { document.getElementById('signin-pin-sec').classList.remove('visible'); return; }
+  selectSignInPlayer(id);
 }
 
 function selectSignInPlayer(id) {
   S.selectedPlayer = PLAYERS.find(p=>p.id===id);
   S.pin = '';
-  document.querySelectorAll('#signin-grid .player-btn').forEach(b=>b.classList.remove('selected'));
-  document.getElementById('pbtn-'+id).classList.add('selected');
   document.getElementById('signin-pin-who').textContent = 'Hi, '+S.selectedPlayer.name+'!';
   document.getElementById('signin-pin-sec').classList.add('visible');
   updateSiPinDots();
