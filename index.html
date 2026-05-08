@@ -1006,7 +1006,7 @@ body{font-family:'Barlow',-apple-system,BlinkMacSystemFont,sans-serif;background
       </div>
       <div class="shotgun-info-card">
         <div class="shotgun-player" id="shotgun-player-text">Rastani</div>
-        <div class="shotgun-detail" id="shotgun-detail-text">Bogeyed Hole 6 · Team Palmer</div>
+        <div class="shotgun-detail" id="shotgun-detail-text">3-putted Hole 6 · Team Palmer</div>
       </div>
       <div class="shotgun-actions">
         <button class="shotgun-btn-primary" onclick="recordShotgun()">🎥 Record Shotgun Now</button>
@@ -1253,6 +1253,7 @@ const S = {
   groups:   JSON.parse(localStorage.getItem('ppc_groups')||'{}'),
   myGroupId: null,
   groupEntryScore: 0,
+  groupEntryPutts: 2,
 };
 
 // ── PROFILE HELPERS ──
@@ -1780,6 +1781,8 @@ function renderGroupScorecard(group, round) {
   const h = group.currentHole || 1;
   const par = PARS[h-1];
   const score = S.groupEntryScore || par;
+  const putts = S.groupEntryPutts !== undefined ? S.groupEntryPutts : 2;
+  const puttsLbl = putts >= 3 ? '3 Putts 🍺' : putts === 0 ? 'Chip-in!' : putts === 1 ? '1 Putt' : putts + ' Putts';
   const players=(group.players||[]).map(id=>PLAYERS.find(p=>p.id===id)).filter(Boolean);
   const names=players.map(p=>p.name.split(' ')[0]).join(' & ');
   const tt=S.teeTimes[group.teeTimeId];
@@ -1825,13 +1828,29 @@ function renderGroupScorecard(group, round) {
           <div class="hole-nav-btn" onclick="groupChangeHole(1)">›</div>
         </div>
       </div>
-      <div style="display:flex;justify-content:center;align-items:center;gap:28px;padding:16px 0 8px">
-        <div class="score-minus" onclick="adjustGroupScore(-1)">−</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 0 4px">
         <div style="text-align:center">
-          <div class="score-num" id="grp-score" style="color:${scoreColor(score,par)}">${score}</div>
-          <div class="score-par-label" id="grp-score-lbl">${scoreLabel(score,par)}</div>
+          <div style="font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--tx);margin-bottom:8px">Strokes</div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:14px">
+            <div class="score-minus" onclick="adjustGroupScore(-1)">−</div>
+            <div>
+              <div class="score-num" id="grp-score" style="color:${scoreColor(score,par)}">${score}</div>
+              <div class="score-par-label" id="grp-score-lbl">${scoreLabel(score,par)}</div>
+            </div>
+            <div class="score-plus" onclick="adjustGroupScore(1)">+</div>
+          </div>
         </div>
-        <div class="score-plus" onclick="adjustGroupScore(1)">+</div>
+        <div style="text-align:center;border-left:1px solid var(--border)">
+          <div style="font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--tx);margin-bottom:8px">Putts</div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:14px">
+            <div class="score-minus" onclick="adjustGroupPutts(-1)">−</div>
+            <div>
+              <div class="score-num" id="grp-putts" style="color:${putts>=3?'var(--orange)':'var(--t2)'}">${putts}</div>
+              <div class="score-par-label" id="grp-putts-lbl" style="color:${putts>=3?'var(--orange)':'var(--tx)'}">${puttsLbl}</div>
+            </div>
+            <div class="score-plus" onclick="adjustGroupPutts(1)">+</div>
+          </div>
+        </div>
       </div>
       <div class="quick-btns">
         <div class="quick-btn qb-eagle" onclick="setGroupQuick('eagle')">Eagle</div>
@@ -2049,7 +2068,7 @@ function renderRules() {
     <div class="shotgun-rule-card">
       <div class="src-title">🍺 Shotgun Rule</div>
       <div class="src-body">
-        <p>When a <strong>bogey or worse</strong> is recorded, the responsible player(s) must complete a shotgun beer on camera.</p>
+        <p>When a player <strong>3-putts</strong>, they must complete a shotgun beer on camera.</p>
         <p>Video must be uploaded to the Feed within <strong>30 minutes</strong> or it gets flagged for admin review.</p>
       </div>
     </div>
@@ -2135,11 +2154,16 @@ function saveGroupScore() {
   const h = group.currentHole || 1;
   const par = PARS[h-1];
   const sc = S.groupEntryScore || par;
+  const putts = S.groupEntryPutts !== undefined ? S.groupEntryPutts : 2;
   if (!group.scores) group.scores = {};
+  if (!group.putts) group.putts = {};
   group.scores[h] = sc;
-  if (sc > par) setTimeout(()=>openShotgunModal(S.user.id,h), 500);
+  group.putts[h] = putts;
+  if (putts >= 3) setTimeout(()=>openShotgunModal(S.user.id, h, '3-putt'), 500);
   group.currentHole = Math.min(18, h+1);
-  S.groupEntryScore = PARS[group.currentHole-1];
+  const nextH = group.currentHole;
+  S.groupEntryScore = group.scores[nextH] || PARS[nextH-1];
+  S.groupEntryPutts = group.putts?.[nextH] ?? 2;
   saveGroupsLocal();
   if (navigator.vibrate) navigator.vibrate([50]);
   render();
@@ -2149,7 +2173,9 @@ function groupChangeHole(dir) {
   if (!S.myGroupId || !S.groups[S.myGroupId]) return;
   const group = S.groups[S.myGroupId];
   group.currentHole = Math.max(1, Math.min(18, (group.currentHole||1)+dir));
-  S.groupEntryScore = group.scores[group.currentHole] || PARS[group.currentHole-1];
+  const h = group.currentHole;
+  S.groupEntryScore = group.scores?.[h] || PARS[h-1];
+  S.groupEntryPutts = group.putts?.[h] ?? 2;
   saveGroupsLocal();
   render();
 }
@@ -2165,12 +2191,24 @@ function adjustGroupScore(dir) {
   if(lbl) lbl.textContent=scoreLabel(S.groupEntryScore,par);
 }
 
+function adjustGroupPutts(dir) {
+  S.groupEntryPutts = Math.max(0, Math.min(9, (S.groupEntryPutts ?? 2) + dir));
+  const p = S.groupEntryPutts;
+  const el = document.getElementById('grp-putts');
+  const lbl = document.getElementById('grp-putts-lbl');
+  const lbl_text = p >= 3 ? '3 Putts 🍺' : p === 0 ? 'Chip-in!' : p === 1 ? '1 Putt' : p + ' Putts';
+  const col = p >= 3 ? 'var(--orange)' : 'var(--t2)';
+  if (el) { el.textContent = p; el.style.color = col; }
+  if (lbl) { lbl.textContent = lbl_text; lbl.style.color = p >= 3 ? 'var(--orange)' : 'var(--tx)'; }
+}
+
 function setGroupQuick(type) {
   const group = S.myGroupId && S.groups[S.myGroupId];
   if (!group) return;
   const par = PARS[(group.currentHole||1)-1];
   const map={eagle:par-2,birdie:par-1,par,bogey:par+1,double:par+2};
   S.groupEntryScore = Math.max(1, map[type]);
+  S.groupEntryPutts = type === 'eagle' ? 1 : 2;
   render();
 }
 
@@ -2228,11 +2266,14 @@ function checkShotgunQueue() {
   }
 }
 
-function openShotgunModal(playerId, hole) {
+function openShotgunModal(playerId, hole, reason) {
   const p = PLAYERS.find(x=>x.id===playerId);
-  document.getElementById('shotgun-sub-text').textContent = `${p.name} bogeyed Hole ${hole}. Shotgun time! 🍺`;
+  const is3putt = reason === '3-putt';
+  document.getElementById('shotgun-sub-text').textContent = is3putt
+    ? `${p.name} 3-putted Hole ${hole}. Shotgun time! 🍺`
+    : `${p.name} bogeyed Hole ${hole}. Shotgun time! 🍺`;
   document.getElementById('shotgun-player-text').textContent = p.name;
-  document.getElementById('shotgun-detail-text').textContent = `Bogeyed Hole ${hole} · ${TEAMS[p.team].name}`;
+  document.getElementById('shotgun-detail-text').textContent = `${is3putt?'3-putted':'Bogeyed'} Hole ${hole} · ${TEAMS[p.team].name}`;
   document.getElementById('shotgun-modal').classList.add('open');
 }
 
@@ -2598,6 +2639,7 @@ function findMyGroup() {
   if (S.myGroupId) {
     const h = S.groups[S.myGroupId].currentHole || 1;
     S.groupEntryScore = S.groups[S.myGroupId].scores?.[h] || PARS[h-1];
+    S.groupEntryPutts = S.groups[S.myGroupId].putts?.[h] ?? 2;
   }
 }
 
