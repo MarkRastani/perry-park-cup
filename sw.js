@@ -1,4 +1,4 @@
-const CACHE = 'perry-park-v2';
+const CACHE = 'perry-park-v3';
 const ASSETS = ['./', './index.html', './manifest.json', './icons/icon-192.svg'];
 
 self.addEventListener('install', e => {

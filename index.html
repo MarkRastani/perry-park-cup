@@ -17,6 +17,8 @@
 <link href='https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css' rel='stylesheet' />
 <script src='https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js' defer></script>
 <script src='config.js'></script>
+<script src='https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js'></script>
+<script src='https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js'></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden}
@@ -1415,6 +1417,7 @@ function getProfile(playerId) {
 
 function saveProfileData(playerId, data) {
   localStorage.setItem('profile_' + playerId, JSON.stringify(data));
+  _sync('profiles/' + playerId, data);
 }
 
 function getPlayerAvatar(player) {
@@ -1640,6 +1643,7 @@ async function saveNewAccount() {
   if(!CA.player) return;
   const hash = await sha256(CA.pinConfirm);
   localStorage.setItem('pin_'+CA.player.id, hash);
+  _sync('pins/'+CA.player.id, hash);
   saveProfileData(CA.player.id, {
     claimed: true,
     profilePic: CA.profilePic,
@@ -1807,6 +1811,7 @@ async function saveSetupProfile() {
       }
       const hash = await sha256(S.setupNewPin);
       localStorage.setItem('pin_' + S.user.id, hash);
+      _sync('pins/' + S.user.id, hash);
     }
   }
 
@@ -2363,6 +2368,7 @@ function toggleReaction(postId, emoji) {
   const list = S.reactions[postId][emoji];
   const idx = list.indexOf(S.user.id);
   if (idx>=0) list.splice(idx,1); else list.push(S.user.id);
+  _sync('reactions/' + postId, S.reactions[postId]);
   render();
 }
 
@@ -2658,6 +2664,7 @@ function sendAnnouncement() {
 
 function resetPin(playerId,name) {
   localStorage.removeItem('pin_'+playerId);
+  _sync('pins/'+playerId, null);
   if (navigator.vibrate) navigator.vibrate([50]);
   alert(`✅ ${name}'s PIN reset to 1234.`);
 }
@@ -2742,6 +2749,7 @@ function refreshPlayerMarkers() {
 
 function setMyHole(h) {
   S.playerHoles[S.user.id] = h;
+  _sync('playerHoles/' + S.user.id, h);
   document.querySelectorAll('.hp-btn').forEach((btn,i)=>btn.classList.toggle('mine',i+1===h));
   const listEl = document.querySelector('.player-info-card');
   if (listEl) {
@@ -2760,6 +2768,7 @@ function saveRoundStatus() {
   const status={};
   ROUNDS.forEach(r=>status[r.id]=r.status);
   localStorage.setItem('ppc_roundStatus', JSON.stringify(status));
+  _sync('roundStatus', status);
 }
 
 function restoreRoundStatus() {
@@ -2769,10 +2778,12 @@ function restoreRoundStatus() {
 
 function saveTeeTimesLocal() {
   localStorage.setItem('ppc_teeTimes', JSON.stringify(S.teeTimes));
+  _sync('teeTimes', S.teeTimes);
 }
 
 function saveGroupsLocal() {
   localStorage.setItem('ppc_groups', JSON.stringify(S.groups));
+  syncGroups();
 }
 
 function findMyGroup() {
@@ -2932,6 +2943,110 @@ function confirmStartRound() {
   render();
 }
 
+// ── CLOUD SYNC (Firebase Realtime Database) ──
+// Remote DB is the source of truth for shared state; local saves push up,
+// listeners pull down and persist to localStorage for offline fallback.
+let _fdb = null;
+let _remoteGroupKeys = new Set();
+
+function _sync(path, val) {
+  if (_fdb) _fdb.ref('sync/' + path).set(val === undefined ? null : val).catch(()=>{});
+}
+
+function syncGroups() {
+  if (!_fdb) return;
+  const upd = {};
+  Object.entries(S.groups).forEach(([gid, g]) => upd[gid] = g);
+  _remoteGroupKeys.forEach(gid => { if (!(gid in S.groups)) upd[gid] = null; });
+  if (Object.keys(upd).length) _fdb.ref('sync/groups').update(upd).catch(()=>{});
+}
+
+function initSync() {
+  if (!window.FIREBASE_CONFIG || !window.firebase) return;
+  try {
+    firebase.initializeApp(window.FIREBASE_CONFIG);
+    _fdb = firebase.database();
+  } catch (e) { _fdb = null; return; }
+
+  // Firebase coerces numeric-keyed objects (scores, putts) into sparse arrays; undo that
+  const _deArray = obj => {
+    if (!Array.isArray(obj)) return obj || {};
+    const out = {};
+    obj.forEach((val, i) => { if (val != null) out[i] = val; });
+    return out;
+  };
+
+  _fdb.ref('sync/groups').on('value', s => {
+    const v = s.val() || {};
+    Object.values(v).forEach(g => { g.scores = _deArray(g.scores); g.putts = _deArray(g.putts); });
+    _remoteGroupKeys = new Set(Object.keys(v));
+    S.groups = v;
+    localStorage.setItem('ppc_groups', JSON.stringify(v));
+    const es = S.groupEntryScore, ep = S.groupEntryPutts;
+    findMyGroup();
+    if (S.myGroupId) { S.groupEntryScore = es; S.groupEntryPutts = ep; }
+    if (['scores','standings'].includes(S.tab)) render();
+  });
+
+  _fdb.ref('sync/teeTimes').on('value', s => {
+    S.teeTimes = s.val() || {};
+    localStorage.setItem('ppc_teeTimes', JSON.stringify(S.teeTimes));
+  });
+
+  _fdb.ref('sync/roundStatus').on('value', s => {
+    const v = s.val() || {};
+    ROUNDS.forEach(r => { if (v[r.id]) r.status = v[r.id]; });
+    localStorage.setItem('ppc_roundStatus', JSON.stringify(v));
+    findMyGroup();
+    if (['scores','standings'].includes(S.tab)) render();
+  });
+
+  _fdb.ref('sync/playerHoles').on('value', s => {
+    Object.assign(S.playerHoles, s.val() || {});
+    if (S.tab === 'map' && typeof _mbMap !== 'undefined' && _mbMap && _mbMap.isStyleLoaded()) refreshPlayerMarkers();
+  });
+
+  _fdb.ref('sync/profiles').on('value', s => {
+    const v = s.val() || {};
+    let changed = false;
+    Object.entries(v).forEach(([pid, prof]) => {
+      const str = JSON.stringify(prof);
+      if (localStorage.getItem('profile_' + pid) !== str) {
+        localStorage.setItem('profile_' + pid, str);
+        changed = true;
+      }
+    });
+    if (changed && S.user) render();
+  });
+
+  _fdb.ref('sync/pins').on('value', s => {
+    Object.entries(s.val() || {}).forEach(([pid, hash]) => {
+      if (hash) localStorage.setItem('pin_' + pid, hash);
+      else localStorage.removeItem('pin_' + pid);
+    });
+  });
+
+  _fdb.ref('sync/feed').on('child_added', s => {
+    const post = s.val();
+    if (!post || FEED_POSTS.some(p => p.id === post.id)) return;
+    Array.prototype.unshift.call(FEED_POSTS, post);
+    if (S.tab === 'feed') render();
+  });
+
+  _fdb.ref('sync/reactions').on('value', s => {
+    Object.assign(S.reactions, s.val() || {});
+    if (S.tab === 'feed') render();
+  });
+
+  // Any post added locally (score alerts, shotguns, announcements) publishes to the shared feed
+  const _origUnshift = Array.prototype.unshift.bind(FEED_POSTS);
+  FEED_POSTS.unshift = function(...posts) {
+    const r = _origUnshift(...posts);
+    posts.forEach(p => _sync('feed/' + p.id, p));
+    return r;
+  };
+}
+
 // ── INIT ──
 if ('serviceWorker' in navigator) {
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
@@ -2942,6 +3057,7 @@ MATCHES.forEach(m=>{
   S.entryScores[m.id]={a:PARS[h-1],b:PARS[h-1]};
 });
 
+initSync();
 initAuth();
 </script>
 </body>
