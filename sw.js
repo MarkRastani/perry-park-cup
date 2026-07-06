@@ -1,5 +1,5 @@
-const CACHE = 'perry-park-v1';
-const ASSETS = ['/', '/index.html', '/manifest.json', '/icons/icon-192.svg'];
+const CACHE = 'perry-park-v2';
+const ASSETS = ['./', './index.html', './manifest.json', './icons/icon-192.svg'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
@@ -29,15 +29,15 @@ self.addEventListener('push', e => {
   const data = e.data.json();
   e.waitUntil(self.registration.showNotification(data.title, {
     body: data.body,
-    icon: '/icons/icon-192.svg',
-    badge: '/icons/icon-192.svg',
+    icon: './icons/icon-192.svg',
+    badge: './icons/icon-192.svg',
     tag: data.tag || 'perry-park',
-    data: data.url || '/',
+    data: data.url || './',
     vibrate: [200, 100, 200]
   }));
 });
 
 self.addEventListener('notificationclick', e => {
   e.notification.close();
-  e.waitUntil(clients.openWindow(e.notification.data || '/'));
+  e.waitUntil(clients.openWindow(e.notification.data || './'));
 });
