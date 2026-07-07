@@ -1339,16 +1339,17 @@ const TEAMS = {
 const PARS = [4,3,5,4,4,3,5,4,4,4,3,5,4,4,3,5,4,4];
 
 const ROUNDS = [
-  {id:'r1',day:1,num:1,name:'Round 1',format:'2-Man Scramble',status:'scheduled'},
-  {id:'r2',day:1,num:2,name:'Round 2',format:'Modified Alternate Shot',status:'scheduled'},
-  {id:'r3',day:2,num:3,name:'Round 3',format:'2-Man Scramble',status:'scheduled'},
-  {id:'r4',day:2,num:4,name:'Round 4',format:'4-Man Scramble',status:'scheduled'},
+  {id:'r1',day:1,num:1,name:'Round 1',format:'2-Man Scramble',status:'scheduled',comboId:'buckskin_antlers'},
+  {id:'r2',day:1,num:2,name:'Round 2',format:'Modified Alternate Shot',status:'scheduled',comboId:'whitetail_buckskin'},
+  {id:'r3',day:2,num:3,name:'Round 3',format:'2-Man Scramble',status:'scheduled',comboId:'antlers_whitetail'},
+  {id:'r4',day:2,num:4,name:'Round 4',format:'4-Man Scramble',status:'scheduled',comboId:'buckskin_antlers'},
 ];
 
 const COURSE_COMBOS = [
   {id:'antlers_whitetail',name:'Antlers + Whitetail',short:'ANT + WHT',courses:['Antlers','Whitetail'],desc:'Front 9 loops around the lake · Back 9 through the valley',pars:[4,3,5,4,4,3,5,4,4,4,3,5,4,4,3,5,4,4],holeLabels:['A1','A2','A3','A4','A5','A6','A7','A8','A9','W1','W2','W3','W4','W5','W6','W7','W8','W9']},
   {id:'antlers_buckskin',name:'Antlers + Buckskin',short:'ANT + BCK',courses:['Antlers','Buckskin'],desc:'Front 9 lake loop · Buckskin back 9 (wooded terrain)',pars:[4,3,5,4,4,3,5,4,4,4,3,5,4,4,3,5,4,5],holeLabels:['A1','A2','A3','A4','A5','A6','A7','A8','A9','B1','B2','B3','B4','B5','B6','B7','B8','B9']},
   {id:'whitetail_buckskin',name:'Whitetail + Buckskin',short:'WHT + BCK',courses:['Whitetail','Buckskin'],desc:'Whitetail front 9 · Buckskin back 9',pars:[4,3,5,4,4,3,5,4,4,4,3,5,4,4,3,5,4,5],holeLabels:['W1','W2','W3','W4','W5','W6','W7','W8','W9','B1','B2','B3','B4','B5','B6','B7','B8','B9']},
+  {id:'buckskin_antlers',name:'Buckskin + Antlers',short:'BCK + ANT',courses:['Buckskin','Antlers'],desc:'Buckskin front 9 (wooded terrain) · Antlers back 9 around the lake',pars:[4,3,5,4,4,3,5,4,5,4,3,5,4,4,3,5,4,4],holeLabels:['B1','B2','B3','B4','B5','B6','B7','B8','B9','A1','A2','A3','A4','A5','A6','A7','A8','A9']},
 ];
 
 const MATCHES = [
@@ -1362,6 +1363,20 @@ const FEED_POSTS = [
 ];
 
 const PLAYER_HOLES = {matt:1,grant:1,marc:1,webby:1,adam:1,jordan:1,jake:1,justin:1,jordanb:1,john:1,rastani:1,mark:1};
+const COURSE_COORDS = {
+  Antlers: [
+    [38.5258,-85.0101],[38.5274,-85.0157],[38.5241,-85.0168],[38.5247,-85.0150],[38.5238,-85.0180],
+    [38.5263,-85.0182],[38.5229,-85.0182],[38.5229,-85.0158],[38.5249,-85.0112],
+  ],
+  Whitetail: [
+    [38.5318,-85.0082],[38.5285,-85.0168],[38.5330,-85.0136],[38.5353,-85.0118],[38.5372,-85.0072],
+    [38.5374,-85.0042],[38.5351,-85.0128],[38.5333,-85.0115],[38.5311,-85.0098],
+  ],
+  // Buckskin GPS positions unknown — null disables auto-location and map pins for these holes
+  Buckskin: [null,null,null,null,null,null,null,null,null],
+};
+
+// Rebuilt in place by applyRoundCombo() to match the active round's course combo
 const HOLE_COORDS_GPS = [
   // Antlers Course — Holes 1–9 (southwest loops around western lake)
   [38.5258, -85.0101],  // A1
@@ -2449,8 +2464,9 @@ function findNearestHole(lat,lng) {
     return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
   }
   let best=0,bestDist=Infinity;
-  HOLE_COORDS_GPS.forEach(([hlat,hlng],i)=>{
-    const d=haversine(lat,lng,hlat,hlng);
+  HOLE_COORDS_GPS.forEach((c,i)=>{
+    if(!c) return;
+    const d=haversine(lat,lng,c[0],c[1]);
     if(d<bestDist){bestDist=d;best=i+1;}
   });
   return best;
@@ -2675,6 +2691,7 @@ function startRound(roundId) {
   if (!r) return;
   ROUNDS.forEach(x=>{if(x.status==='active')x.status='scheduled';});
   r.status='active';
+  applyRoundCombo();
   saveRoundStatus();
   S.myGroupId = null;
   findMyGroup();
@@ -2772,7 +2789,9 @@ function initMapboxMap() {
 
 function addMapHoleMarkers() {
   if (!_mbMap) return;
-  HOLE_COORDS_GPS.forEach(([lat,lng],i) => {
+  HOLE_COORDS_GPS.forEach((c,i) => {
+    if (!c) return;
+    const [lat,lng] = c;
     const h = i+1;
     const el = document.createElement('div');
     el.style.cssText = 'width:22px;height:22px;border-radius:50%;background:rgba(6,14,9,.85);border:1.5px solid rgba(200,160,48,.8);display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed,sans-serif;font-size:10px;font-weight:900;color:#E8BE40;pointer-events:none;box-shadow:0 1px 6px rgba(0,0,0,.5)';
@@ -2789,6 +2808,7 @@ function refreshPlayerMarkers() {
   PLAYERS.forEach(p=>{const h=S.playerHoles[p.id]||1;if(!holeGroups[h])holeGroups[h]=[];holeGroups[h].push(p);});
   PLAYERS.forEach(p=>{
     const h = S.playerHoles[p.id]||1;
+    if (!HOLE_COORDS_GPS[h-1]) return;
     const [lat,lng] = HOLE_COORDS_GPS[h-1];
     const group = holeGroups[h];
     const idx = group.indexOf(p);
@@ -2835,6 +2855,16 @@ function setMyHole(h) {
 }
 
 // ── PERSISTENCE HELPERS ──
+// Apply the active round's course combo: swap pars and hole GPS coords in place
+function applyRoundCombo() {
+  const active = ROUNDS.find(r=>r.status==='active') || ROUNDS.find(r=>r.status==='scheduled');
+  const combo = COURSE_COMBOS.find(c=>c.id===(active&&active.comboId)) || COURSE_COMBOS[0];
+  S.courseComboId = combo.id;
+  combo.pars.forEach((p,i)=>PARS[i]=p);
+  const coords = [...COURSE_COORDS[combo.courses[0]], ...COURSE_COORDS[combo.courses[1]]];
+  coords.forEach((c,i)=>HOLE_COORDS_GPS[i]=c);
+}
+
 function saveRoundStatus() {
   const status={};
   ROUNDS.forEach(r=>status[r.id]=r.status);
@@ -2845,6 +2875,7 @@ function saveRoundStatus() {
 function restoreRoundStatus() {
   const saved=JSON.parse(localStorage.getItem('ppc_roundStatus')||'{}');
   ROUNDS.forEach(r=>{ if(saved[r.id]) r.status=saved[r.id]; });
+  applyRoundCombo();
 }
 
 function saveTeeTimesLocal() {
@@ -3068,6 +3099,7 @@ function initSync() {
     const v = s.val() || {};
     ROUNDS.forEach(r => { if (v[r.id]) r.status = v[r.id]; });
     localStorage.setItem('ppc_roundStatus', JSON.stringify(v));
+    applyRoundCombo();
     findMyGroup();
     if (['scores','standings'].includes(S.tab)) render();
   });
