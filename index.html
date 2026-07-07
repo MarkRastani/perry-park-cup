@@ -1547,7 +1547,14 @@ const TEAMS = {
   palmer:{id:'palmer',name:'Team Palmer',short:'Palmer',cls:'pal',color:'#1840C0'},
 };
 
-const PARS = [4,3,5,4,4,3,5,4,4,4,3,5,4,4,3,5,4,4];
+// Official scorecard pars per nine (updated from course scorecard, July 2026)
+const COURSE_PARS = {
+  Whitetail: [5,3,4,5,4,4,4,4,3],  // 36
+  Buckskin:  [4,4,4,5,3,4,4,5,4],  // 37
+  Antlers:   [5,3,4,3,4,4,4,4,5],  // 36
+};
+// Mutated in place by applyRoundCombo(); default = Antlers + Whitetail
+const PARS = [...COURSE_PARS.Antlers, ...COURSE_PARS.Whitetail];
 
 const ROUNDS = [
   {id:'r1',day:1,num:1,name:'Round 1',format:'2-Man Scramble',status:'scheduled',comboId:'buckskin_antlers'},
@@ -1557,10 +1564,10 @@ const ROUNDS = [
 ];
 
 const COURSE_COMBOS = [
-  {id:'antlers_whitetail',name:'Antlers + Whitetail',short:'ANT + WHT',courses:['Antlers','Whitetail'],desc:'Front 9 loops around the lake · Back 9 through the valley',pars:[4,3,5,4,4,3,5,4,4,4,3,5,4,4,3,5,4,4],holeLabels:['A1','A2','A3','A4','A5','A6','A7','A8','A9','W1','W2','W3','W4','W5','W6','W7','W8','W9']},
-  {id:'antlers_buckskin',name:'Antlers + Buckskin',short:'ANT + BCK',courses:['Antlers','Buckskin'],desc:'Front 9 lake loop · Buckskin back 9 (wooded terrain)',pars:[4,3,5,4,4,3,5,4,4,4,3,5,4,4,3,5,4,5],holeLabels:['A1','A2','A3','A4','A5','A6','A7','A8','A9','B1','B2','B3','B4','B5','B6','B7','B8','B9']},
-  {id:'whitetail_buckskin',name:'Whitetail + Buckskin',short:'WHT + BCK',courses:['Whitetail','Buckskin'],desc:'Whitetail front 9 · Buckskin back 9',pars:[4,3,5,4,4,3,5,4,4,4,3,5,4,4,3,5,4,5],holeLabels:['W1','W2','W3','W4','W5','W6','W7','W8','W9','B1','B2','B3','B4','B5','B6','B7','B8','B9']},
-  {id:'buckskin_antlers',name:'Buckskin + Antlers',short:'BCK + ANT',courses:['Buckskin','Antlers'],desc:'Buckskin front 9 (wooded terrain) · Antlers back 9 around the lake',pars:[4,3,5,4,4,3,5,4,5,4,3,5,4,4,3,5,4,4],holeLabels:['B1','B2','B3','B4','B5','B6','B7','B8','B9','A1','A2','A3','A4','A5','A6','A7','A8','A9']},
+  {id:'antlers_whitetail',name:'Antlers + Whitetail',short:'ANT + WHT',courses:['Antlers','Whitetail'],desc:'Front 9 loops around the lake · Back 9 through the valley',pars:[...COURSE_PARS.Antlers, ...COURSE_PARS.Whitetail],holeLabels:['A1','A2','A3','A4','A5','A6','A7','A8','A9','W1','W2','W3','W4','W5','W6','W7','W8','W9']},
+  {id:'antlers_buckskin',name:'Antlers + Buckskin',short:'ANT + BCK',courses:['Antlers','Buckskin'],desc:'Front 9 lake loop · Buckskin back 9 (wooded terrain)',pars:[...COURSE_PARS.Antlers, ...COURSE_PARS.Buckskin],holeLabels:['A1','A2','A3','A4','A5','A6','A7','A8','A9','B1','B2','B3','B4','B5','B6','B7','B8','B9']},
+  {id:'whitetail_buckskin',name:'Whitetail + Buckskin',short:'WHT + BCK',courses:['Whitetail','Buckskin'],desc:'Whitetail front 9 · Buckskin back 9',pars:[...COURSE_PARS.Whitetail, ...COURSE_PARS.Buckskin],holeLabels:['W1','W2','W3','W4','W5','W6','W7','W8','W9','B1','B2','B3','B4','B5','B6','B7','B8','B9']},
+  {id:'buckskin_antlers',name:'Buckskin + Antlers',short:'BCK + ANT',courses:['Buckskin','Antlers'],desc:'Buckskin front 9 (wooded terrain) · Antlers back 9 around the lake',pars:[...COURSE_PARS.Buckskin, ...COURSE_PARS.Antlers],holeLabels:['B1','B2','B3','B4','B5','B6','B7','B8','B9','A1','A2','A3','A4','A5','A6','A7','A8','A9']},
 ];
 
 const MATCHES = [
