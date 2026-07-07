@@ -1574,45 +1574,26 @@ const FEED_POSTS = [
 ];
 
 const PLAYER_HOLES = {matt:1,grant:1,marc:1,webby:1,adam:1,jordan:1,jake:1,justin:1,jordanb:1,john:1,rastani:1,mark:1};
+// Mid-hole points from OpenStreetMap hole geometry (golf=hole ways), verified
+// against satellite imagery — nines partitioned by green→next-tee continuity
 const COURSE_COORDS = {
   Antlers: [
-    [38.5258,-85.0101],[38.5274,-85.0157],[38.5241,-85.0168],[38.5247,-85.0150],[38.5238,-85.0180],
-    [38.5263,-85.0182],[38.5229,-85.0182],[38.5229,-85.0158],[38.5249,-85.0112],
+    [38.53594,-85.00198],[38.53528,-85.00253],[38.53344,-85.00356],[38.53217,-85.00597],[38.53024,-85.00779],
+    [38.53221,-85.00758],[38.53010,-85.00695],[38.53189,-85.00514],[38.53605,-85.00369],
   ],
   Whitetail: [
-    [38.5318,-85.0082],[38.5285,-85.0168],[38.5330,-85.0136],[38.5353,-85.0118],[38.5372,-85.0072],
-    [38.5374,-85.0042],[38.5351,-85.0128],[38.5333,-85.0115],[38.5311,-85.0098],
+    [38.53434,-85.00519],[38.53507,-85.00638],[38.53793,-85.00997],[38.54026,-85.00908],[38.54550,-85.00659],
+    [38.54408,-85.00702],[38.53928,-85.00963],[38.53927,-85.00807],[38.53823,-85.00617],
   ],
-  // Buckskin — rough positions estimated from satellite imagery (northern nine along the river bend)
   Buckskin: [
-    [38.5470,-85.0027],[38.5485,-85.0048],[38.5464,-85.0077],[38.5448,-85.0070],[38.5424,-85.0103],
-    [38.5407,-85.0110],[38.5434,-85.0074],[38.5438,-85.0040],[38.5458,-85.0032],
+    [38.54033,-85.00610],[38.54175,-85.01142],[38.54263,-85.00905],[38.54665,-85.00630],[38.54620,-85.00354],
+    [38.54728,-85.00473],[38.54727,-85.00253],[38.54268,-85.00451],[38.53949,-85.00332],
   ],
 };
 
-// Rebuilt in place by applyRoundCombo() to match the active round's course combo
-const HOLE_COORDS_GPS = [
-  // Antlers Course — Holes 1–9 (southwest loops around western lake)
-  [38.5258, -85.0101],  // A1
-  [38.5274, -85.0157],  // A2
-  [38.5241, -85.0168],  // A3
-  [38.5247, -85.0150],  // A4
-  [38.5238, -85.0180],  // A5
-  [38.5263, -85.0182],  // A6
-  [38.5229, -85.0182],  // A7
-  [38.5229, -85.0158],  // A8
-  [38.5249, -85.0112],  // A9
-  // Whitetail Course — Holes 10–18 (center/north around main lake)
-  [38.5318, -85.0082],  // W1
-  [38.5285, -85.0168],  // W2
-  [38.5330, -85.0136],  // W3
-  [38.5353, -85.0118],  // W4
-  [38.5372, -85.0072],  // W5
-  [38.5374, -85.0042],  // W6
-  [38.5351, -85.0128],  // W7
-  [38.5333, -85.0115],  // W8
-  [38.5311, -85.0098],  // W9
-];
+// Rebuilt in place by applyRoundCombo() to match the active round's course combo.
+// Default = Antlers 1–9 then Whitetail 1–9 (the Round 1/4 combo).
+const HOLE_COORDS_GPS = [...COURSE_COORDS.Antlers, ...COURSE_COORDS.Whitetail];
 
 const PROFILE_AVATARS = ['⛳','🏌️','🦅','🏆','🔥','⚡','💎','👑','🎯','🦁','❄️','🎳'];
 // Full library shown when the picker is expanded
