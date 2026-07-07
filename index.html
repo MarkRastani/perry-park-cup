@@ -1087,6 +1087,11 @@ body{font-family:'Instrument Sans',-apple-system,BlinkMacSystemFont,sans-serif;b
 .mu-dash{color:var(--tx)}
 tr.mu-half td{background:var(--bg2);font-size:13px;font-weight:800;color:var(--t2)}
 tr.mu-total td{background:linear-gradient(180deg,#0A3020,#0D3828);color:#fff;font-size:13px;font-weight:800}
+.mu-pt{font-size:11px;font-weight:800;text-align:center}
+.mu-pt.nic{color:var(--nic2)}
+.mu-pt.pal{color:var(--pal3)}
+.mu-pt.tie{color:var(--tm)}
+tr.mu-total .mu-pt{color:#F0D060}
 
 /* ── FEED COMPOSER & PHOTOS ── */
 #composer-modal{position:fixed;inset:0;z-index:210;display:none;align-items:flex-end;justify-content:center}
@@ -2369,8 +2374,15 @@ function findPairingGroup(roundId, ids) {
   ) || null;
 }
 
+// Rounds scored as live per-hole match play: every hole is worth 1 point, the
+// lower team score wins it, ties award nothing. A hole only counts once BOTH
+// sides have submitted a score for it, and points hit the standings immediately.
+// Currently the 2-man scrambles; other formats keep whole-match scoring.
+function isHolePointsRound(round){ return round.format === '2-Man Scramble'; }
+
 function computeMatchups(round) {
   const pars = comboFor(round.id).pars;
+  const holePts = isHolePointsRound(round);
   return (S.pairings[round.id]||[]).map((pr,idx)=>{
     const nicG = findPairingGroup(round.id, pr.nic);
     const palG = findPairingGroup(round.id, pr.pal);
@@ -2384,21 +2396,32 @@ function computeMatchups(round) {
       };
     };
     const nic = stats(nicG), pal = stats(palG);
-    let diff=0, common=0;
+    let diff=0, common=0, hn=0, hp=0;
+    const holeWinners = {};
     for (let h=1; h<=18; h++) {
       const a=nicG&&nicG.scores&&nicG.scores[h], b=palG&&palG.scores&&palG.scores[h];
-      if (a!=null && b!=null) { diff += a-b; common++; }
+      if (a!=null && b!=null) {
+        diff += a-b; common++;
+        if (a<b) { hn++; holeWinners[h]='nic'; }
+        else if (b<a) { hp++; holeWinners[h]='pal'; }
+        else holeWinners[h]='tie';
+      }
     }
     const done = round.status==='completed' || (nic.thru>=18 && pal.thru>=18);
     let nicPts=0, palPts=0;
-    if (done && common>0) {
+    if (holePts) {
+      nicPts=hn; palPts=hp;   // live: every decided hole counts as it happens
+    } else if (done && common>0) {
       if (diff<0) nicPts=1; else if (diff>0) palPts=1; else { nicPts=.5; palPts=.5; }
     }
     const label = common===0 ? (nic.thru||pal.thru ? 'Waiting on opponent' : 'Not started')
+      : holePts ? (hn===hp ? `Tied ${hn}–${hp} thru ${common}`
+        : hn>hp ? `Nicklaus leads ${hn}–${hp} thru ${common}`
+        : `Palmer leads ${hp}–${hn} thru ${common}`)
       : diff===0 ? `All square thru ${common}`
       : diff<0 ? `Nicklaus ${-diff} up thru ${common}`
       : `Palmer ${diff} up thru ${common}`;
-    return {idx, round, pair:pr, nicG, palG, nic, pal, nicPts, palPts, done, label, diff, common};
+    return {idx, round, pair:pr, nicG, palG, nic, pal, nicPts, palPts, done, label, diff, common, hn, hp, holeWinners, holePts};
   });
 }
 
@@ -2450,22 +2473,33 @@ function renderMatchupDetail(m) {
     const cls = d<=-2?'sc-eagle':d===-1?'sc-birdie':d===0?'sc-par':d===1?'sc-bogey':'sc-double';
     return `<td><span class="score-chip ${cls}">${sc}</span></td>`;
   };
+  const ptCell = h => {
+    if (!m.holePts) return '';
+    const w = m.holeWinners[h];
+    return w==='nic' ? '<td class="mu-pt nic">●</td>'
+         : w==='pal' ? '<td class="mu-pt pal">●</td>'
+         : w==='tie' ? '<td class="mu-pt tie">–</td>'
+         : '<td class="mu-pt"></td>';
+  };
   const half = (from,to,label) => {
     const sum = g => { let t=0,n=0; for(let h=from;h<=to;h++){const s=g&&g.scores&&g.scores[h]; if(s!=null){t+=s;n++;}} return n?t:null; };
     const ns=sum(m.nicG), ps=sum(m.palG);
+    let pn=0, pp=0;
+    for (let h=from;h<=to;h++){ if(m.holeWinners[h]==='nic')pn++; else if(m.holeWinners[h]==='pal')pp++; }
     return `
-      ${Array.from({length:to-from+1},(_,i)=>{const h=from+i;return `<tr><td>${combo.holeLabels[h-1]}</td><td class="par-cell">${combo.pars[h-1]}</td>${cell(m.nicG,h)}${cell(m.palG,h)}</tr>`;}).join('')}
-      <tr class="mu-half"><td colspan="2">${label}</td><td>${ns??'—'}</td><td>${ps??'—'}</td></tr>`;
+      ${Array.from({length:to-from+1},(_,i)=>{const h=from+i;return `<tr><td>${combo.holeLabels[h-1]}</td><td class="par-cell">${combo.pars[h-1]}</td>${cell(m.nicG,h)}${cell(m.palG,h)}${ptCell(h)}</tr>`;}).join('')}
+      <tr class="mu-half"><td colspan="2">${label}</td><td>${ns??'—'}</td><td>${ps??'—'}</td>${m.holePts?`<td class="mu-pt">${pn}–${pp}</td>`:''}</tr>`;
   };
   return `<div class="mu-detail">
     <table class="scorecard">
-      <thead><tr><th>Hole</th><th>Par</th><th class="nic-th">NIC</th><th class="pal-th">PAL</th></tr></thead>
+      <thead><tr><th>Hole</th><th>Par</th><th class="nic-th">NIC</th><th class="pal-th">PAL</th>${m.holePts?'<th>Pt</th>':''}</tr></thead>
       <tbody>
         ${half(1,9,'Front')}
         ${half(10,18,'Back')}
         <tr class="mu-total"><td colspan="2">Total</td>
           <td>${m.nic.thru?`${m.nic.total} (${fmtToPar(m.nic.toPar)})`:'—'}</td>
-          <td>${m.pal.thru?`${m.pal.total} (${fmtToPar(m.pal.toPar)})`:'—'}</td></tr>
+          <td>${m.pal.thru?`${m.pal.total} (${fmtToPar(m.pal.toPar)})`:'—'}</td>
+          ${m.holePts?`<td class="mu-pt">${m.hn}–${m.hp}</td>`:''}</tr>
       </tbody>
     </table>
   </div>`;
@@ -2475,12 +2509,16 @@ function renderMatchupCard(m) {
   const key = `${m.round.id}:${m.idx}`;
   const open = S.standingsMatch===key;
   const names = ids => (ids||[]).filter(Boolean).map(id=>{const p=PLAYERS.find(x=>x.id===id);return p?p.name.split(' ')[0]:id;}).join(' & ') || 'TBD';
-  const side = (g,st,cls) => `<div class="mu-side ${cls}">
+  const side = (g,st,cls) => {
+    const pts = cls==='nic'?m.hn:m.hp;
+    return `<div class="mu-side ${cls}">
       <div class="mu-names">${names(cls==='nic'?m.pair.nic:m.pair.pal)}</div>
-      <div class="mu-score">${st.thru?`${fmtToPar(st.toPar)} <span class="mu-thru">thru ${st.thru}</span>`:'<span class="mu-thru">—</span>'}</div>
+      <div class="mu-score">${m.holePts && m.common>0 ? `${pts} <span class="mu-thru">pt${pts===1?'':'s'}</span>`
+        : st.thru?`${fmtToPar(st.toPar)} <span class="mu-thru">thru ${st.thru}</span>`:'<span class="mu-thru">—</span>'}</div>
     </div>`;
+  };
   const badge = m.done
-    ? (m.nicPts>m.palPts?'<span class="mu-badge nic-b">Nicklaus wins</span>':m.palPts>m.nicPts?'<span class="mu-badge pal-b">Palmer wins</span>':'<span class="mu-badge">Halved</span>')
+    ? (m.nicPts>m.palPts?'<span class="mu-badge nic-b">Nicklaus wins</span>':m.palPts>m.nicPts?'<span class="mu-badge pal-b">Palmer wins</span>':`<span class="mu-badge">${m.holePts?'Tied':'Halved'}</span>`)
     : m.common>0?'<span class="mu-badge live-b">Live</span>':'';
   return `<div class="mu-card${open?' open':''}" onclick="toggleStandingsMatch('${key}')">
     <div class="mu-row">
@@ -2724,10 +2762,10 @@ function renderRules() {
     </div>
     <div class="section-header">Points System</div>
     <div class="points-card">
-      <div class="points-row"><div class="points-label">Win a match</div><div class="points-val">1 pt</div></div>
-      <div class="points-row"><div class="points-label">Tie a match</div><div class="points-val">½ pt each</div></div>
-      <div class="points-row"><div class="points-label">Lose a match</div><div class="points-val">0 pts</div></div>
-      <div class="points-row"><div class="points-label">Total rounds</div><div class="points-val">4</div></div>
+      <div class="points-row"><div class="points-label"><strong>Rounds 1 &amp; 3 (Scramble)</strong> — win a hole</div><div class="points-val">1 pt</div></div>
+      <div class="points-row"><div class="points-label">Tie a hole</div><div class="points-val">0 pts</div></div>
+      <div class="points-row"><div class="points-label"><strong>Rounds 2 &amp; 4</strong> — win the match</div><div class="points-val">1 pt</div></div>
+      <div class="points-row"><div class="points-label">Tie the match</div><div class="points-val">½ pt each</div></div>
     </div>
     <div class="section-header">Teams</div>
     <div style="margin:0 12px;background:var(--card);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden">
@@ -2837,7 +2875,7 @@ function saveGroupScore() {
 function liveCupScore() {
   let nic=0, pal=0;
   ROUNDS.forEach(r=>computeMatchups(r).forEach(m=>{
-    if (m.done) { nic+=m.nicPts; pal+=m.palPts; }
+    if (m.holePts || m.done) { nic+=m.nicPts; pal+=m.palPts; }
     else if (m.common>0) { if (m.diff<0) nic++; else if (m.diff>0) pal++; else { nic+=.5; pal+=.5; } }
   }));
   return {nic, pal, leader: nic>pal?'nicklaus':pal>nic?'palmer':null};
