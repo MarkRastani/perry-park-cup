@@ -1050,6 +1050,37 @@ body{font-family:'Instrument Sans',-apple-system,BlinkMacSystemFont,sans-serif;b
 .shotgun-btn-later,.profile-action-btn{font-size:15px !important;font-weight:600 !important}
 .quick-btn{font-family:'Instrument Sans',sans-serif !important;font-size:15px !important;font-weight:600 !important;letter-spacing:0 !important}
 .tut-skip{font-family:'Instrument Sans',sans-serif !important}
+
+/* ── STANDINGS V2 ── */
+.seg-wrap{padding:14px 12px 0}
+.seg{display:flex;background:var(--bg2);border-radius:12px;padding:3px;gap:3px}
+.seg-btn{flex:1;text-align:center;padding:9px 0;border-radius:10px;font-size:14px;font-weight:600;color:var(--tm);cursor:pointer;transition:all .15s}
+.seg-btn.active{background:var(--card);color:var(--t1);box-shadow:0 1px 4px rgba(0,0,0,.08);font-weight:700}
+.pst-6col{grid-template-columns:1fr repeat(5,34px) !important}
+.rr-row{cursor:pointer}
+.rr-row.open{background:var(--card2)}
+.rr-detail{padding:4px 10px 12px;background:var(--card2);border-bottom:1px solid var(--border)}
+.rr-empty{text-align:center;padding:16px;font-size:13px;color:var(--tm)}
+.mu-card{background:var(--card);border:1px solid var(--border);border-radius:var(--rs);padding:12px 14px;margin-top:8px;cursor:pointer;box-shadow:var(--sh)}
+.mu-row{display:flex;align-items:center;gap:10px}
+.mu-side{flex:1}
+.mu-side.pal{text-align:right}
+.mu-names{font-size:13.5px;font-weight:700;color:var(--t1)}
+.mu-side.nic .mu-names{color:var(--nic)}
+.mu-side.pal .mu-names{color:var(--pal)}
+.mu-score{font-family:'Bricolage Grotesque',sans-serif;font-size:17px;font-weight:800;color:var(--t2);margin-top:2px}
+.mu-thru{font-size:11px;font-weight:600;color:var(--tx)}
+.mu-vs{font-size:11px;font-weight:700;color:var(--tx);text-transform:uppercase}
+.mu-status{margin-top:8px;font-size:12px;font-weight:600;color:var(--tm);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.mu-badge{font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:2px 8px;border-radius:20px;background:var(--bg2);color:var(--tm)}
+.mu-badge.nic-b{background:var(--nic-bg2);color:var(--nic)}
+.mu-badge.pal-b{background:var(--pal-bg2);color:var(--pal)}
+.mu-badge.live-b{background:var(--g-soft);color:var(--g3)}
+.mu-detail{margin-top:10px;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+.mu-detail .scorecard td{font-size:14px;padding:6px}
+.mu-dash{color:var(--tx)}
+tr.mu-half td{background:var(--bg2);font-size:13px;font-weight:800;color:var(--t2)}
+tr.mu-total td{background:linear-gradient(180deg,#0A3020,#0D3828);color:#fff;font-size:13px;font-weight:800}
 </style>
 </head>
 <body>
@@ -1182,8 +1213,8 @@ body{font-family:'Instrument Sans',-apple-system,BlinkMacSystemFont,sans-serif;b
       <div id="ca-4" style="display:none">
         <div class="login-card">
           <div class="ca-step-label">Contact Info <span style="opacity:.4;font-size:.82em">(optional)</span></div>
-          <input class="ca-input" id="ca-phone" type="tel" placeholder="📱 Phone number">
-          <input class="ca-input" id="ca-venmo" type="text" placeholder="💸 Venmo @ handle">
+          <input class="ca-input" id="ca-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="Phone number" maxlength="14" oninput="formatPhoneInput(this)">
+          <input class="ca-input" id="ca-venmo" type="text" autocomplete="off" placeholder="Venmo @handle">
           <button class="ca-save-btn" onclick="saveNewAccount()">Join the Cup →</button>
         </div>
         <div class="ll-back" onclick="caGoTo(3)">← Back</div>
@@ -1215,7 +1246,7 @@ body{font-family:'Instrument Sans',-apple-system,BlinkMacSystemFont,sans-serif;b
       <div class="nav-label">Scores</div>
     </div>
     <div class="nav-item" id="nav-standings" onclick="navigate('standings')">
-      <div class="nav-icon-wrap"><div class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z" fill="#111"/></svg></div></div>
+      <div class="nav-icon-wrap"><div class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M6 3h12v2h3v3c0 2.5-1.9 4.6-4.4 4.94A6.02 6.02 0 0 1 13 16.9V19h3v2H8v-2h3v-2.1a6.02 6.02 0 0 1-3.6-3.96A5 5 0 0 1 3 8V5h3V3zm-1 4v1a3 3 0 0 0 1.9 2.8A9.9 9.9 0 0 1 6.1 7H5zm14 0h-1.1a9.9 9.9 0 0 1-.8 3.8A3 3 0 0 0 19 8V7z" fill="#111"/></svg></div></div>
       <div class="nav-label">Standings</div>
     </div>
     <div class="nav-item" id="nav-map" onclick="navigate('map')">
@@ -1227,7 +1258,7 @@ body{font-family:'Instrument Sans',-apple-system,BlinkMacSystemFont,sans-serif;b
       <div class="nav-label">Feed</div>
     </div>
     <div class="nav-item" id="nav-rules" onclick="navigate('rules')">
-      <div class="nav-icon-wrap"><div class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11zM8 15h8v2H8v-2zm0-4h8v2H8v-2z" fill="#111"/></svg></div></div>
+      <div class="nav-icon-wrap"><div class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24"><ellipse cx="12" cy="20.2" rx="6.5" ry="2" fill="#111" opacity=".35"/><path d="M10 2h2v18.5h-2z" fill="#111"/><path d="M12 2.6l8.2 3.1L12 8.9z" fill="#111"/></svg></div></div>
       <div class="nav-label">Rules</div>
     </div>
   </div>
@@ -1707,6 +1738,13 @@ function initCaPhotoStep() {
   ).join('');
 }
 
+function formatPhoneInput(input) {
+  const d = input.value.replace(/\D/g,'').slice(0,10);
+  input.value = d.length > 6 ? `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`
+              : d.length > 3 ? `(${d.slice(0,3)}) ${d.slice(3)}`
+              : d;
+}
+
 function triggerPhotoUpload() { document.getElementById('ca-photo-input').click(); }
 
 function handlePhotoUpload(input) {
@@ -2175,33 +2213,156 @@ function renderGroupScorecard(group, round) {
     <div class="page-bottom"></div>`;
 }
 
-// ── STANDINGS ──
+// ── STANDINGS ENGINE ──
+// Every completed round's groups stay in S.groups keyed by round, so history is never lost.
+function comboFor(roundId) {
+  const r = ROUNDS.find(x=>x.id===roundId);
+  return COURSE_COMBOS.find(c=>c.id===(r&&r.comboId)) || COURSE_COMBOS[0];
+}
+
+function findPairingGroup(roundId, ids) {
+  const want = (ids||[]).filter(Boolean);
+  if (!want.length) return null;
+  return Object.values(S.groups).find(g =>
+    g.roundId===roundId && Array.isArray(g.players) && want.every(id=>g.players.includes(id))
+  ) || null;
+}
+
+function computeMatchups(round) {
+  const pars = comboFor(round.id).pars;
+  return (S.pairings[round.id]||[]).map((pr,idx)=>{
+    const nicG = findPairingGroup(round.id, pr.nic);
+    const palG = findPairingGroup(round.id, pr.pal);
+    const stats = g => {
+      const sc = (g&&g.scores)||{};
+      const holes = Object.keys(sc).map(Number);
+      return {
+        thru: holes.length,
+        total: holes.reduce((a,h)=>a+sc[h],0),
+        toPar: holes.reduce((a,h)=>a+sc[h]-pars[h-1],0),
+      };
+    };
+    const nic = stats(nicG), pal = stats(palG);
+    let diff=0, common=0;
+    for (let h=1; h<=18; h++) {
+      const a=nicG&&nicG.scores&&nicG.scores[h], b=palG&&palG.scores&&palG.scores[h];
+      if (a!=null && b!=null) { diff += a-b; common++; }
+    }
+    const done = round.status==='completed' || (nic.thru>=18 && pal.thru>=18);
+    let nicPts=0, palPts=0;
+    if (done && common>0) {
+      if (diff<0) nicPts=1; else if (diff>0) palPts=1; else { nicPts=.5; palPts=.5; }
+    }
+    const label = common===0 ? (nic.thru||pal.thru ? 'Waiting on opponent' : 'Not started')
+      : diff===0 ? `All square thru ${common}`
+      : diff<0 ? `Nicklaus ${-diff} up thru ${common}`
+      : `Palmer ${diff} up thru ${common}`;
+    return {idx, round, pair:pr, nicG, palG, nic, pal, nicPts, palPts, done, label, diff, common};
+  });
+}
+
+function computeStandings() {
+  let nicPts=0, palPts=0; const perRound={};
+  ROUNDS.forEach(r=>{
+    const matchups = computeMatchups(r);
+    const rn = matchups.reduce((a,m)=>a+m.nicPts,0);
+    const rp = matchups.reduce((a,m)=>a+m.palPts,0);
+    perRound[r.id] = {nic:rn, pal:rp, matchups};
+    nicPts+=rn; palPts+=rp;
+  });
+  return {nicPts, palPts, perRound};
+}
+
+function computePlayerStats() {
+  const map = {};
+  PLAYERS.forEach(p=>map[p.id]={...p,eagles:0,birdies:0,pars:0,bogeys:0,threePutts:0,played:0,toPar:0});
+  Object.values(S.groups).forEach(g=>{
+    const pars = comboFor(g.roundId).pars;
+    const members = (g.players||[]).filter(id=>map[id]);
+    Object.entries(g.scores||{}).forEach(([h,sc])=>{
+      if (sc==null) return;
+      const d = sc - pars[parseInt(h)-1];
+      const p3 = (g.putts&&g.putts[h]>=3) ? 1 : 0;
+      members.forEach(id=>{
+        const st = map[id];
+        st.played++; st.toPar+=d; st.threePutts+=p3;
+        if (d<=-2) st.eagles++; else if (d===-1) st.birdies++;
+        else if (d===0) st.pars++; else st.bogeys++;
+      });
+    });
+  });
+  return Object.values(map);
+}
+
+function fmtToPar(d){ return d===0?'E':d>0?`+${d}`:`${d}`; }
+
+function setStandingsView(v){ S.standingsView=v; render(); }
+function toggleStandingsRound(rid){ S.standingsRound = S.standingsRound===rid?null:rid; S.standingsMatch=null; render(); }
+function toggleStandingsMatch(key){ S.standingsMatch = S.standingsMatch===key?null:key; render(); }
+
+function renderMatchupDetail(m) {
+  const combo = comboFor(m.round.id);
+  const cell = (g,h) => {
+    const sc = g&&g.scores&&g.scores[h];
+    if (sc==null) return '<td class="mu-dash">—</td>';
+    const d = sc - combo.pars[h-1];
+    const cls = d<=-2?'sc-eagle':d===-1?'sc-birdie':d===0?'sc-par':d===1?'sc-bogey':'sc-double';
+    return `<td><span class="score-chip ${cls}">${sc}</span></td>`;
+  };
+  const half = (from,to,label) => {
+    const sum = g => { let t=0,n=0; for(let h=from;h<=to;h++){const s=g&&g.scores&&g.scores[h]; if(s!=null){t+=s;n++;}} return n?t:null; };
+    const ns=sum(m.nicG), ps=sum(m.palG);
+    return `
+      ${Array.from({length:to-from+1},(_,i)=>{const h=from+i;return `<tr><td>${combo.holeLabels[h-1]}</td><td class="par-cell">${combo.pars[h-1]}</td>${cell(m.nicG,h)}${cell(m.palG,h)}</tr>`;}).join('')}
+      <tr class="mu-half"><td colspan="2">${label}</td><td>${ns??'—'}</td><td>${ps??'—'}</td></tr>`;
+  };
+  return `<div class="mu-detail">
+    <table class="scorecard">
+      <thead><tr><th>Hole</th><th>Par</th><th class="nic-th">NIC</th><th class="pal-th">PAL</th></tr></thead>
+      <tbody>
+        ${half(1,9,'Front')}
+        ${half(10,18,'Back')}
+        <tr class="mu-total"><td colspan="2">Total</td>
+          <td>${m.nic.thru?`${m.nic.total} (${fmtToPar(m.nic.toPar)})`:'—'}</td>
+          <td>${m.pal.thru?`${m.pal.total} (${fmtToPar(m.pal.toPar)})`:'—'}</td></tr>
+      </tbody>
+    </table>
+  </div>`;
+}
+
+function renderMatchupCard(m) {
+  const key = `${m.round.id}:${m.idx}`;
+  const open = S.standingsMatch===key;
+  const names = ids => (ids||[]).filter(Boolean).map(id=>{const p=PLAYERS.find(x=>x.id===id);return p?p.name.split(' ')[0]:id;}).join(' & ') || 'TBD';
+  const side = (g,st,cls) => `<div class="mu-side ${cls}">
+      <div class="mu-names">${names(cls==='nic'?m.pair.nic:m.pair.pal)}</div>
+      <div class="mu-score">${st.thru?`${fmtToPar(st.toPar)} <span class="mu-thru">thru ${st.thru}</span>`:'<span class="mu-thru">—</span>'}</div>
+    </div>`;
+  const badge = m.done
+    ? (m.nicPts>m.palPts?'<span class="mu-badge nic-b">Nicklaus wins</span>':m.palPts>m.nicPts?'<span class="mu-badge pal-b">Palmer wins</span>':'<span class="mu-badge">Halved</span>')
+    : m.common>0?'<span class="mu-badge live-b">Live</span>':'';
+  return `<div class="mu-card${open?' open':''}" onclick="toggleStandingsMatch('${key}')">
+    <div class="mu-row">
+      ${side(m.nicG,m.nic,'nic')}
+      <div class="mu-vs">vs</div>
+      ${side(m.palG,m.pal,'pal')}
+    </div>
+    <div class="mu-status">${m.label} ${badge}</div>
+    ${open?renderMatchupDetail(m):''}
+  </div>`;
+}
+
 function renderStandings() {
-  let nicPts=0, palPts=0;
+  const st = computeStandings();
+  const nicPts = st.nicPts, palPts = st.palPts;
   const total = nicPts + palPts;
   const nicW = total > 0 ? (nicPts/total*100).toFixed(1) : 50;
   const palW = total > 0 ? (palPts/total*100).toFixed(1) : 50;
   const leader = nicPts > palPts ? 'Team Nicklaus' : palPts > nicPts ? 'Team Palmer' : null;
 
-  const playerStats = PLAYERS.map(p => {
-    let birdies=0, bogeys=0, pars=0, total2=0;
-    Object.values(S.matchScores).forEach(msc => {
-      const m = MATCHES.find(x=>S.matchScores[x.id]===msc) ||
-        MATCHES.find(x=>x.nicPlayers.includes(p.id)||x.palPlayers.includes(p.id));
-      if (!m) return;
-      const isNic = m.nicPlayers.includes(p.id);
-      Object.entries(msc).forEach(([h,sc])=>{
-        if (!sc) return;
-        const par=PARS[parseInt(h)-1];
-        const s = isNic ? sc[0] : sc[1];
-        if (s<=par-1) birdies++;
-        else if (s===par) pars++;
-        else bogeys++;
-        total2++;
-      });
-    });
-    return {...p,birdies,bogeys,pars,played:total2};
-  });
+  const playerStats = computePlayerStats();
+  const view = S.standingsView || 'matches';
+  const fmtPts = n => n % 1 === 0 ? n : n.toFixed(1).replace('.5','½').replace(/^0½$/,'½');
 
   return `
     <div class="standings-hero">
@@ -2210,12 +2371,12 @@ function renderStandings() {
         <div class="standings-teams">
           <div class="team-score-block">
             <div class="team-score-name nic"><img src="images/logo-nicklaus.jpg" style="height:36px;width:auto;object-fit:contain;border-radius:4px;margin-bottom:4px;display:block;margin-left:auto;margin-right:auto"></div>
-            <div class="team-score-pts" style="color:var(--nic2)">${nicPts}</div>
+            <div class="team-score-pts" style="color:var(--nic2)">${fmtPts(nicPts)}</div>
           </div>
           <div class="standings-divider">:</div>
           <div class="team-score-block">
             <div class="team-score-name pal"><img src="images/logo-palmer.png" style="height:36px;width:auto;object-fit:contain;border-radius:4px;margin-bottom:4px;display:block;margin-left:auto;margin-right:auto"></div>
-            <div class="team-score-pts" style="color:var(--pal3)">${palPts}</div>
+            <div class="team-score-pts" style="color:var(--pal3)">${fmtPts(palPts)}</div>
           </div>
         </div>
         <div class="standings-bar">
@@ -2225,38 +2386,52 @@ function renderStandings() {
         <div class="leader-badge">${leader ? `<strong>${leader}</strong> leads the cup` : 'All Square'}</div>
       </div>
     </div>
+    <div class="seg-wrap">
+      <div class="seg">
+        <div class="seg-btn${view==='matches'?' active':''}" onclick="setStandingsView('matches')">Matches</div>
+        <div class="seg-btn${view==='players'?' active':''}" onclick="setStandingsView('players')">Players</div>
+      </div>
+    </div>
+    ${view==='matches' ? `
     <div class="section-header">Round Results</div>
     <div class="round-results">
-      ${ROUNDS.map(r=>`
-        <div class="rr-row">
-          <div><div class="rr-round">${r.name}</div><div class="rr-format">${r.format}</div></div>
+      ${ROUNDS.map(r=>{
+        const rr = st.perRound[r.id];
+        const open = S.standingsRound===r.id;
+        const started = rr.matchups.some(m=>m.common>0 || m.nic.thru>0 || m.pal.thru>0);
+        return `
+        <div class="rr-row${open?' open':''}" onclick="toggleStandingsRound('${r.id}')">
+          <div><div class="rr-round">${r.name} · ${comboFor(r.id).short}</div><div class="rr-format">${r.format}</div></div>
           <div style="display:flex;align-items:center">
-            <div class="rr-pts"><span class="rr-pt nic">—</span><span class="rr-sep">/</span><span class="rr-pt pal">—</span></div>
-            <span class="rr-status-badge ${r.status==='active'?'active':'pending'}">${r.status==='active'?'🟢 Live':'📅 Sched'}</span>
+            <div class="rr-pts"><span class="rr-pt nic">${started?fmtPts(rr.nic):'—'}</span><span class="rr-sep">/</span><span class="rr-pt pal">${started?fmtPts(rr.pal):'—'}</span></div>
+            <span class="rr-status-badge ${r.status==='active'?'active':'pending'}">${r.status==='active'?'Live':r.status==='completed'?'Final':'Sched'}</span>
           </div>
-        </div>`).join('')}
-    </div>
-    <div class="section-header">Stats</div>
+        </div>
+        ${open?`<div class="rr-detail">${rr.matchups.map(m=>renderMatchupCard(m)).join('')||'<div class="rr-empty">No pairings set for this round yet</div>'}</div>`:''}`;
+      }).join('')}
+    </div>` : `
+    <div class="section-header">Tournament Stats</div>
     <div class="stats-grid">
-      <div class="stat-card"><div class="stat-icon">🦅</div><div class="stat-num">${playerStats.reduce((a,p)=>a+p.birdies,0)}</div><div class="stat-label">Birdies</div></div>
-      <div class="stat-card"><div class="stat-icon">⛳</div><div class="stat-num">${playerStats.reduce((a,p)=>a+p.pars,0)}</div><div class="stat-label">Pars</div></div>
-      <div class="stat-card"><div class="stat-icon">🍺</div><div class="stat-num">${S.shotgunQueue.length}</div><div class="stat-label">Shotguns</div></div>
+      <div class="stat-card"><div class="stat-icon">🦅</div><div class="stat-num">${playerStats.reduce((a,p)=>a+p.eagles,0)}</div><div class="stat-label">Eagles</div></div>
+      <div class="stat-card"><div class="stat-icon">🐦</div><div class="stat-num">${playerStats.reduce((a,p)=>a+p.birdies,0)}</div><div class="stat-label">Birdies</div></div>
+      <div class="stat-card"><div class="stat-icon">🍺</div><div class="stat-num">${playerStats.reduce((a,p)=>a+p.threePutts,0)}</div><div class="stat-label">3-Putts</div></div>
     </div>
     <div class="section-header">Player Stats</div>
     <div class="player-stats-table">
-      <div class="pst-header"><div>Player</div><div>Bir</div><div>Par</div><div>Bog</div><div>Plyd</div></div>
-      ${playerStats.map(p=>`
-        <div class="pst-row">
+      <div class="pst-header pst-6col"><div>Player</div><div>Eag</div><div>Bir</div><div>Par</div><div>3P</div><div>Thru</div></div>
+      ${playerStats.slice().sort((a,b)=>b.played-a.played || a.toPar-b.toPar).map(p=>`
+        <div class="pst-row pst-6col">
           <div class="pst-player">
             <div class="pst-av ${p.team}">${getPlayerAvatar(p)||p.initials}</div>
             <div class="pst-name">${p.name}</div>
           </div>
+          <div class="pst-cell bir">${p.eagles}</div>
           <div class="pst-cell bir">${p.birdies}</div>
           <div class="pst-cell">${p.pars}</div>
-          <div class="pst-cell bog">${p.bogeys}</div>
+          <div class="pst-cell bog">${p.threePutts}</div>
           <div class="pst-cell">${p.played}</div>
         </div>`).join('')}
-    </div>
+    </div>`}
     <div class="page-bottom"></div>`;
 }
 
