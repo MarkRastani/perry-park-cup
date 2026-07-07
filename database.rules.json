@@ -1,1 +1,22 @@
-{"rules": {".read": true, ".write": true}}
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "sync": {
+      ".read": "auth != null",
+      "groups": { ".write": "auth != null" },
+      "teeTimes": { ".write": "auth != null" },
+      "roundStatus": { ".write": "auth != null" },
+      "playerHoles": { ".write": "auth != null" },
+      "profiles": { ".write": "auth != null" },
+      "pins": { ".write": "auth != null" },
+      "feed": {
+        ".write": "auth != null",
+        "$postId": { ".validate": "newData.hasChildren(['id','type','text']) || newData.val() == null" }
+      },
+      "reactions": { ".write": "auth != null" },
+      "comments": { ".write": "auth != null" },
+      "fcmTokens": { ".write": "auth != null" }
+    }
+  }
+}
