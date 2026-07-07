@@ -788,6 +788,22 @@ body{font-family:'Instrument Sans',-apple-system,BlinkMacSystemFont,sans-serif;b
 .player-select.pal{border-color:var(--pal-border);background:var(--pal-bg)}
 .save-pairings-btn{width:100%;padding:14px;border-radius:15px;border:none;cursor:pointer;background:linear-gradient(135deg,var(--g1),var(--g2));color:#fff;font-family:'Bricolage Grotesque',sans-serif;font-size:18px;font-weight:900;box-shadow:0 4px 18px rgba(21,88,64,.3);margin-top:6px}
 .admin-section-title{font-family:'Bricolage Grotesque',sans-serif;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--tx);margin:16px 0 8px}
+
+/* ── NAV UNREAD BADGE ── */
+.nav-badge{position:absolute;top:4px;left:calc(50% + 8px);min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:#D03020;color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(208,48,32,.4);pointer-events:none;animation:nav-pop .38s var(--spring)}
+
+/* ── TOAST (score save / undo) ── */
+#toast{position:fixed;left:50%;transform:translateX(-50%) translateY(16px);bottom:calc(var(--sb) + 76px);z-index:180;background:var(--card);color:var(--t1);border:1px solid var(--border2);border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.22);padding:12px 14px;display:flex;align-items:center;gap:12px;max-width:min(92vw,420px);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s cubic-bezier(0.34,1.56,0.64,1)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+.toast-msg{font-size:14px;font-weight:600;line-height:1.35}
+.toast-undo{border:none;cursor:pointer;background:var(--g-soft);color:var(--g2);font-family:'Bricolage Grotesque',sans-serif;font-size:14px;font-weight:800;letter-spacing:.5px;padding:9px 16px;border-radius:11px;flex-shrink:0;transition:transform .12s}
+.toast-undo:active{transform:scale(.94)}
+
+/* ── SETTINGS TOGGLE (notification prefs / feature flags) ── */
+.pref-toggle{width:46px;height:27px;border-radius:14px;background:var(--border2);position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+.pref-toggle.on{background:var(--g2)}
+.pref-toggle::after{content:'';position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.25);transition:left .2s}
+.pref-toggle.on::after{left:22px}
 .admin-row{display:flex;align-items:center;justify-content:space-between;padding:13px 14px;background:var(--card);border-radius:var(--r2);margin-bottom:6px;border:1.5px solid var(--border)}
 .admin-row-label{font-size:14px;font-weight:600;color:var(--t1)}
 .admin-row-sub{font-size:11px;color:var(--tm);margin-top:1px;font-weight:500}
@@ -1341,12 +1357,16 @@ tr.mu-total td{background:linear-gradient(180deg,#0A3020,#0D3828);color:#fff;fon
     <div class="nav-item" id="nav-feed" onclick="navigate('feed')">
       <div class="nav-icon-wrap"><div class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z" fill="#111"/></svg></div></div>
       <div class="nav-label">Feed</div>
+      <div class="nav-badge" id="feed-badge" style="display:none"></div>
     </div>
     <div class="nav-item" id="nav-rules" onclick="navigate('rules')">
       <div class="nav-icon-wrap"><div class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24"><ellipse cx="12" cy="20.2" rx="6.5" ry="2" fill="#111" opacity=".35"/><path d="M10 2h2v18.5h-2z" fill="#111"/><path d="M12 2.6l8.2 3.1L12 8.9z" fill="#111"/></svg></div></div>
       <div class="nav-label">Rules</div>
     </div>
   </div>
+
+  <!-- TOAST -->
+  <div id="toast"></div>
 
   <!-- SHOTGUN MODAL -->
   <div id="shotgun-modal">
@@ -1644,6 +1664,9 @@ const S = {
   myGroupId: null,
   groupEntryScore: 0,
   groupEntryPutts: 2,
+  flags: JSON.parse(localStorage.getItem('ppc_flags')||'{}'),
+  feedSeenTs: parseInt(localStorage.getItem('ppc_feedSeenTs')||'0',10),
+  _lastEntry: null,
 };
 
 // ── PROFILE HELPERS ──
@@ -1673,6 +1696,25 @@ function getPlayerAvatar(player) {
 function getProfilePic(playerId) {
   const prof = getProfile(playerId);
   return prof && prof.profilePic ? prof.profilePic : null;
+}
+
+// ── NOTIFICATION PREFERENCES (per-player, synced on profile) ──
+// Two mutable groups; mentions and lead changes always notify.
+const NOTIF_SCORE_TYPES = ['birdie_alert','eagle_alert','three_putt','round_complete','shotgun_video'];
+const NOTIF_POST_TYPES  = ['manual_post','photo_post','video_post','milestone','system'];
+
+function notifPrefOn(playerId, key) {
+  const prof = getProfile(playerId);
+  return !(prof && prof.notifPrefs && prof.notifPrefs[key] === false);
+}
+
+function toggleNotifPref(key) {
+  const prof = getProfile(S.user.id) || {};
+  const prefs = {...(prof.notifPrefs || {})};
+  prefs[key] = !notifPrefOn(S.user.id, key);
+  saveProfileData(S.user.id, {...prof, notifPrefs: prefs});
+  openProfile();
+  if (navigator.vibrate) navigator.vibrate([30]);
 }
 
 function renderAvatarEl(player, size, textSize) {
@@ -1984,7 +2026,9 @@ function showApp() {
   captBtn.style.display = isAdminUser(S.user) ? 'flex' : 'none';
   restoreRoundStatus();
   findMyGroup();
+  applyFlags();
   navigate('scores');
+  updateFeedBadge();
   checkShotgunQueue();
   initNotifications();
 }
@@ -2173,10 +2217,51 @@ function updateCharCount() {
 
 // ── ROUTING ──
 function navigate(tab) {
+  if (tab === 'map' && !flagOn('showMap')) tab = 'scores';
   S.tab = tab;
+  if (tab === 'feed') markFeedSeen();
   document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.id==='nav-'+tab));
   render();
   document.getElementById('content').scrollTop = 0;
+}
+
+// ── FEED UNREAD BADGE ──
+function markFeedSeen() {
+  S.feedSeenTs = Date.now();
+  localStorage.setItem('ppc_feedSeenTs', String(S.feedSeenTs));
+  updateFeedBadge();
+}
+
+function feedUnreadCount() {
+  return FEED_POSTS.filter(p => (p.ts||0) > S.feedSeenTs && (!S.user || p.playerId !== S.user.id)).length;
+}
+
+function updateFeedBadge() {
+  const el = document.getElementById('feed-badge');
+  if (!el) return;
+  const n = S.tab === 'feed' ? 0 : feedUnreadCount();
+  el.style.display = n ? 'flex' : 'none';
+  el.textContent = n > 9 ? '9+' : String(n);
+}
+
+// ── FEATURE FLAGS (captains toggle via sync/flags; default = enabled) ──
+function flagOn(name) { return S.flags[name] !== false; }
+
+function toggleFlag(name) {
+  S.flags[name] = !flagOn(name);
+  localStorage.setItem('ppc_flags', JSON.stringify(S.flags));
+  _sync('flags/' + name, S.flags[name]);
+  applyFlags();
+  switchCaptainTab('admin');
+  if (navigator.vibrate) navigator.vibrate([30]);
+}
+
+function applyFlags() {
+  const mapNav = document.getElementById('nav-map');
+  if (mapNav) mapNav.style.display = flagOn('showMap') ? '' : 'none';
+  if (!S.user) return;
+  if (S.tab === 'map' && !flagOn('showMap')) { navigate('scores'); return; }
+  render();
 }
 
 function render() {
@@ -2571,6 +2656,7 @@ function renderStandings() {
 
 // ── MAP ──
 function renderMap() {
+  if (!flagOn('showMap')) return `<div style="text-align:center;padding:48px 24px;color:var(--tm);font-size:14px;font-weight:500">🗺️ The course map is currently disabled by the captains.</div>`;
   const myHole = S.playerHoles[S.user.id] || 1;
   return `
     <div class="map-mb-outer">
@@ -2607,7 +2693,7 @@ function renderMap() {
 const REACTION_EMOJIS = {laughing:'😂',beer:'🍻',fire:'🔥',skull:'💀',golf:'⛳',eyes:'👀'};
 
 function renderFeed() {
-  const myObligation = S.shotgunQueue.find(s => s.player === S.user.id);
+  const myObligation = flagOn('shotgunRule') ? S.shotgunQueue.find(s => s.player === S.user.id) : null;
   return `
     ${myObligation?`<div style="margin:12px 12px 0;background:linear-gradient(135deg,#FFF7ED,#FFEDD5);border:2px solid #FED0A0;border-radius:var(--r);padding:14px 16px;display:flex;align-items:center;gap:12px">
       <div style="font-size:28px;animation:bounce-beer 1s ease-in-out infinite">🍺</div>
@@ -2708,13 +2794,13 @@ function renderRules() {
         <div class="rule-section-body">${f.body}</div>
       </div>`).join('')}
     <div class="section-header">Shotgun Rule</div>
-    <div class="shotgun-rule-card">
+    ${flagOn('shotgunRule')?`<div class="shotgun-rule-card">
       <div class="src-title">🍺 Shotgun Rule</div>
       <div class="src-body">
         <p>When a player <strong>3-putts</strong>, they must complete a shotgun beer on camera.</p>
         <p>Video must be uploaded to the Feed within <strong>30 minutes</strong> or it gets flagged for admin review.</p>
       </div>
-    </div>
+    </div>`:`<div class="rule-section" style="margin:8px 12px 0"><div class="rule-section-body" style="padding:16px 20px"><p style="color:var(--tm)">🍺 The shotgun rule is currently <strong>suspended</strong> by the captains. 3-putts are safe… for now.</p></div></div>`}
     <div class="section-header">Points System</div>
     <div class="points-card">
       <div class="points-row"><div class="points-label">Win a match</div><div class="points-val">1 pt</div></div>
@@ -2813,16 +2899,62 @@ function saveGroupScore() {
   if (!group.putts) group.putts = {};
   const firstEntry = group.scores[h] == null;
   const leaderBefore = liveCupScore().leader;
+  const prevScore = group.scores[h] ?? null;
+  const prevPutts = group.putts[h] ?? null;
   group.scores[h] = sc;
   group.putts[h] = putts;
-  if (putts >= 3) setTimeout(()=>openShotgunModal(S.user.id, h, '3-putt'), 500);
-  if (firstEntry) postScoreEvents(group, h, sc, putts, par, leaderBefore);
+  if (putts >= 3 && flagOn('shotgunRule')) setTimeout(()=>openShotgunModal(S.user.id, h, '3-putt'), 500);
+  const postIds = firstEntry ? postScoreEvents(group, h, sc, putts, par, leaderBefore) : [];
   group.currentHole = Math.min(18, h+1);
   const nextH = group.currentHole;
   S.groupEntryScore = group.scores[nextH] || PARS[nextH-1];
   S.groupEntryPutts = group.putts?.[nextH] ?? 2;
   saveGroupsLocal();
-  if (navigator.vibrate) navigator.vibrate([50]);
+  // Confirmation: distinct success haptic + undo toast
+  if (navigator.vibrate) navigator.vibrate([30,40,60]);
+  S._lastEntry = {gid:S.myGroupId, h, prevScore, prevPutts, firstEntry, postIds};
+  const holeLbl = comboFor(group.roundId).holeLabels[h-1] || `Hole ${h}`;
+  showToast(`<strong>${holeLbl}</strong> saved · ${sc} (${scoreLabel(sc,par)}) · ${putts} putt${putts===1?'':'s'}`, true);
+  render();
+}
+
+// ── SAVE TOAST + UNDO ──
+let _toastTimer = null;
+function showToast(html, undoable) {
+  const t = document.getElementById('toast');
+  if (!t) return;
+  t.innerHTML = `<div class="toast-msg">${html}</div>${undoable?'<button class="toast-undo" onclick="undoLastScore()">UNDO</button>':''}`;
+  t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(hideToast, 6000);
+}
+
+function hideToast() {
+  const t = document.getElementById('toast');
+  if (t) t.classList.remove('show');
+  clearTimeout(_toastTimer);
+}
+
+function undoLastScore() {
+  const e = S._lastEntry;
+  S._lastEntry = null;
+  hideToast();
+  if (!e || !S.groups[e.gid]) return;
+  const g = S.groups[e.gid];
+  if (e.prevScore == null) { delete g.scores[e.h]; if (g.putts) delete g.putts[e.h]; }
+  else { g.scores[e.h] = e.prevScore; if (e.prevPutts != null) g.putts[e.h] = e.prevPutts; }
+  // Retract any auto feed events this entry created (birdie posts, milestones, …)
+  (e.postIds||[]).forEach(id => {
+    const i = FEED_POSTS.findIndex(p => p.id === id);
+    if (i >= 0) Array.prototype.splice.call(FEED_POSTS, i, 1);
+    delete S.reactions[id];
+    _sync('feed/' + id, null);
+  });
+  g.currentHole = e.h;
+  S.groupEntryScore = g.scores[e.h] || PARS[e.h-1];
+  S.groupEntryPutts = g.putts?.[e.h] ?? 2;
+  saveGroupsLocal();
+  if (navigator.vibrate) navigator.vibrate([20]);
   render();
 }
 
@@ -2836,7 +2968,8 @@ function liveCupScore() {
   return {nic, pal, leader: nic>pal?'nicklaus':pal>nic?'palmer':null};
 }
 
-// Automatic feed events fired on first score entry for a hole
+// Automatic feed events fired on first score entry for a hole.
+// Returns the ids of every post it created so an undo can retract them.
 function postScoreEvents(group, h, sc, putts, par, leaderBefore) {
   const combo = comboFor(group.roundId);
   const holeLbl = combo.holeLabels[h-1] || `Hole ${h}`;
@@ -2845,28 +2978,31 @@ function postScoreEvents(group, h, sc, putts, par, leaderBefore) {
   const team = members[0] ? members[0].team : S.user.team;
   const d = sc - par;
   const base = {playerId:S.user.id, team};
+  const made = [];
+  const post = fields => made.push(pushFeedPost(fields).id);
 
-  if (d <= -2) pushFeedPost({...base, type:'eagle_alert', text:`🦅 <strong>${names}</strong> made ${sc===1?'a HOLE-IN-ONE':d<=-3?'an ALBATROSS':'an EAGLE'} on ${holeLbl} (par ${par})!`});
-  else if (d === -1) pushFeedPost({...base, type:'birdie_alert', text:`🐦 <strong>${names}</strong> birdied ${holeLbl}`});
-  if (putts >= 3) pushFeedPost({...base, type:'three_putt', text:`<strong>${names}</strong> 3-putted ${holeLbl}. Shotgun time! 🍺`});
+  if (d <= -2) post({...base, type:'eagle_alert', text:`🦅 <strong>${names}</strong> made ${sc===1?'a HOLE-IN-ONE':d<=-3?'an ALBATROSS':'an EAGLE'} on ${holeLbl} (par ${par})!`});
+  else if (d === -1) post({...base, type:'birdie_alert', text:`🐦 <strong>${names}</strong> birdied ${holeLbl}`});
+  if (putts >= 3 && flagOn('shotgunRule')) post({...base, type:'three_putt', text:`<strong>${names}</strong> 3-putted ${holeLbl}. Shotgun time! 🍺`});
 
   if (Object.keys(group.scores).length >= 18) {
     const pars = combo.pars.reduce((a,b)=>a+b,0);
     const tot = Object.values(group.scores).reduce((a,b)=>a+b,0);
-    pushFeedPost({...base, type:'round_complete', text:`🏁 <strong>${names}</strong> finished their round: ${tot} (${fmtToPar(tot-pars)})`});
+    post({...base, type:'round_complete', text:`🏁 <strong>${names}</strong> finished their round: ${tot} (${fmtToPar(tot-pars)})`});
   }
 
   const after = liveCupScore();
   if (after.leader && after.leader !== leaderBefore) {
-    pushFeedPost({type:'lead_change', playerId:'system', team:'system', text:`👑 <strong>${TEAMS[after.leader].name}</strong> takes the lead in the cup!`});
+    post({type:'lead_change', playerId:'system', team:'system', text:`👑 <strong>${TEAMS[after.leader].name}</strong> takes the lead in the cup!`});
   }
 
   // Milestones: cup-wide birdie counts (this entry just made one of these numbers)
   if (d <= -1) {
     const n = cupBirdieCount();
     if ([5,10,15,20,25,50].includes(n))
-      pushFeedPost({type:'milestone', playerId:'system', team:'system', text:`🎉 <strong>Milestone:</strong> that's birdie number ${n} of the Perry Park Cup — ${names} got it on ${holeLbl}!`});
+      post({type:'milestone', playerId:'system', team:'system', text:`🎉 <strong>Milestone:</strong> that's birdie number ${n} of the Perry Park Cup — ${names} got it on ${holeLbl}!`});
   }
+  return made;
 }
 
 // Birdies-or-better across every group in every round
@@ -3183,6 +3319,11 @@ function notifyPost(post) {
   const body = (post.text||'').replace(/<[^>]+>/g,'');
   const mentioned = S.user && body.toLowerCase().includes('@' + S.user.name.split(' ')[0].toLowerCase());
   if (!document.hidden && !mentioned) return;              // in-app + not mentioned → feed is enough
+  // Muted categories stay silent (mentions and lead changes always come through)
+  if (!mentioned && S.user && post.type !== 'lead_change') {
+    if (NOTIF_SCORE_TYPES.includes(post.type) && !notifPrefOn(S.user.id, 'scores')) return;
+    if (NOTIF_POST_TYPES.includes(post.type) && !notifPrefOn(S.user.id, 'posts')) return;
+  }
   const title = mentioned ? 'You were mentioned' :
     {birdie_alert:'🐦 Birdie!',eagle_alert:'🦅 Eagle alert!',three_putt:'🍺 Shotgun time',lead_change:'👑 Lead change',round_complete:'🏁 Round complete',shotgun_video:'🍺 Shotgun done',milestone:'🎉 Milestone'}[post.type] || 'Perry Park Cup';
   try {
@@ -3195,6 +3336,7 @@ function notifyPost(post) {
 
 // ── SHOTGUN ──
 function checkShotgunQueue() {
+  if (!flagOn('shotgunRule')) return;
   const myObligation = S.shotgunQueue.find(s => s.player === S.user.id);
   if (myObligation) {
     setTimeout(()=>openShotgunModal(S.user.id, myObligation.hole, '3-putt'), 1200);
@@ -3252,6 +3394,18 @@ function openProfile() {
       <div class="profile-stat"><div class="profile-stat-num" style="color:var(--orange)">${stats.shotguns}</div><div class="profile-stat-label">Shotguns</div></div>
     </div>
     ${(prof&&prof.phone)||( prof&&prof.venmo)?`<div style="margin:12px 20px 0;display:flex;gap:10px;flex-wrap:wrap">${prof.phone?`<div style="font-size:13px;color:var(--tm);font-weight:600">📱 ${prof.phone}</div>`:''}${prof.venmo?`<div style="font-size:13px;color:var(--tm);font-weight:600">💸 ${prof.venmo}</div>`:''}</div>`:''}
+    <div style="margin:16px 20px 0">
+      <div class="admin-section-title" style="margin:0 0 6px">Notifications</div>
+      <div style="font-size:11px;color:var(--tm);font-weight:500;margin-bottom:10px">Mentions and lead changes always come through.</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+        <div><div style="font-size:14px;font-weight:600">Score alerts</div><div style="font-size:11px;color:var(--tm)">Birdies, eagles, 3-putts, round finishes</div></div>
+        <div class="pref-toggle ${notifPrefOn(p.id,'scores')?'on':''}" onclick="toggleNotifPref('scores')"></div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0">
+        <div><div style="font-size:14px;font-weight:600">Posts & media</div><div style="font-size:11px;color:var(--tm)">Trash talk, photos, videos, milestones</div></div>
+        <div class="pref-toggle ${notifPrefOn(p.id,'posts')?'on':''}" onclick="toggleNotifPref('posts')"></div>
+      </div>
+    </div>
     <div class="profile-actions">
       <div class="profile-action-btn profile-edit-btn" onclick="closeProfile();editProfile()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -3448,6 +3602,15 @@ function renderCaptainAdmin() {
         </div>
       </div>`;
     }).join('')}
+    <div class="admin-section-title" style="margin-top:20px">Feature Flags</div>
+    <div style="font-size:12px;color:var(--tm);margin-bottom:10px;font-weight:500">Toggle app features for everyone. Changes sync instantly.</div>
+    ${[
+      {id:'shotgunRule', name:'Shotgun Rule', sub:'3-putts trigger shotgun obligations + feed alerts'},
+      {id:'showMap', name:'Course Map', sub:'Show the Map tab and player locations'},
+    ].map(f=>`<div class="admin-row">
+      <div><div class="admin-row-label">${f.name}</div><div class="admin-row-sub">${f.sub}</div></div>
+      <div class="pref-toggle ${flagOn(f.id)?'on':''}" onclick="toggleFlag('${f.id}')"></div>
+    </div>`).join('')}
     <div class="admin-section-title" style="margin-top:20px">Admin Access</div>
     <div style="font-size:12px;color:var(--tm);margin-bottom:10px;font-weight:500">Grant trusted players access to this panel.</div>
     ${PLAYERS.filter(p=>!['captain','admin'].includes(p.role)).map(p=>{
@@ -3924,7 +4087,23 @@ function attachSyncListeners() {
     Array.prototype.unshift.call(FEED_POSTS, post);
     FEED_POSTS.sort((a,b)=>(b.ts||0)-(a.ts||0));
     notifyPost(post);
+    if (S.tab === 'feed') { markFeedSeen(); render(); }
+    else updateFeedBadge();
+  });
+
+  // Retracted posts (score undo) disappear everywhere
+  _fdb.ref('sync/feed').on('child_removed', s => {
+    const i = FEED_POSTS.findIndex(p => p.id === s.key);
+    if (i >= 0) Array.prototype.splice.call(FEED_POSTS, i, 1);
+    delete S.reactions[s.key];
+    updateFeedBadge();
     if (S.tab === 'feed') render();
+  });
+
+  _fdb.ref('sync/flags').on('value', s => {
+    S.flags = s.val() || {};
+    localStorage.setItem('ppc_flags', JSON.stringify(S.flags));
+    applyFlags();
   });
 
   _fdb.ref('sync/reactions').on('value', s => {

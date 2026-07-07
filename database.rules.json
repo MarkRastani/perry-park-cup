@@ -16,7 +16,8 @@
       },
       "reactions": { ".write": "auth != null" },
       "comments": { ".write": "auth != null" },
-      "fcmTokens": { ".write": "auth != null" }
+      "fcmTokens": { ".write": "auth != null" },
+      "flags": { ".write": "auth != null" }
     }
   }
 }
