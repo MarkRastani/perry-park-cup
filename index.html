@@ -49,6 +49,21 @@ body{font-family:'Barlow',-apple-system,BlinkMacSystemFont,sans-serif;background
   --bir-bg:#EDFDF3;--bogey-bg:#FFFAE8;
 }
 
+/* ── TUTORIAL ── */
+.tut-overlay{position:fixed;inset:0;z-index:3000;background:linear-gradient(160deg,#060E09 0%,#0B3020 100%);display:flex;flex-direction:column;justify-content:space-between;padding:calc(var(--st) + 24px) 24px calc(var(--sb) + 24px);animation:glow-in .35s ease-out}
+.tut-body{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:18px}
+.tut-icon{width:88px;height:88px;border-radius:26px;background:rgba(232,190,64,.12);border:1.5px solid rgba(232,190,64,.35);display:flex;align-items:center;justify-content:center;animation:float 3s ease-in-out infinite}
+.tut-icon svg{width:44px;height:44px;stroke:var(--gold3)}
+.tut-step-label{font-family:'Barlow Condensed';font-weight:700;font-size:13px;letter-spacing:3px;text-transform:uppercase;color:var(--gold2)}
+.tut-title{font-family:'Barlow Condensed';font-weight:800;font-size:34px;color:#FFF;line-height:1.1}
+.tut-text{font-size:15.5px;line-height:1.6;color:rgba(255,255,255,.75);max-width:320px;font-weight:400}
+.tut-dots{display:flex;gap:8px;justify-content:center;margin-bottom:22px}
+.tut-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.22);transition:all .25s}
+.tut-dot.on{background:var(--gold3);width:24px;border-radius:4px}
+.tut-btn{width:100%;padding:17px;border:none;border-radius:14px;background:linear-gradient(135deg,var(--gold2),var(--gold3));color:#1A1408;font-family:'Barlow Condensed';font-weight:800;font-size:19px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;box-shadow:var(--sh-gold)}
+.tut-btn:active{transform:scale(.98)}
+.tut-skip{width:100%;padding:13px;border:none;background:none;color:rgba(255,255,255,.5);font-family:'Barlow';font-weight:600;font-size:14px;cursor:pointer;margin-top:6px}
+
 @keyframes shimmer{0%{background-position:200% center}100%{background-position:-200% center}}
 @keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.55;transform:scale(.82)}}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
@@ -1309,7 +1324,7 @@ const PLAYERS = [
   {id:'jordanb', name:'Jordan Barnett',    initials:'JB',team:'nicklaus',handicap:20,role:'player'},
   {id:'john',    name:'John Schmalz',      initials:'JS',team:'nicklaus',handicap:16,role:'player'},
   {id:'marc',    name:'Marc Schmalz',      initials:'MS',team:'palmer',  handicap:10,role:'captain'},
-  {id:'webby',   name:'Webby',             initials:'WB',team:'palmer',  handicap:15,role:'player'},
+  {id:'webby',   name:'Matt Wuebker',      initials:'MW',team:'palmer',  handicap:15,role:'player'},
   {id:'jake',    name:'Jacob Willenbrink', initials:'JW',team:'palmer',  handicap:22,role:'player'},
   {id:'justin',  name:'Justin Fey',        initials:'JF',team:'palmer',  handicap:11,role:'player'},
   {id:'rastani', name:'Mark Rastani',      initials:'MR',team:'palmer',  handicap:25,role:'admin'},
@@ -1324,7 +1339,7 @@ const TEAMS = {
 const PARS = [4,3,5,4,4,3,5,4,4,4,3,5,4,4,3,5,4,4];
 
 const ROUNDS = [
-  {id:'r1',day:1,num:1,name:'Round 1',format:'2-Man Scramble',status:'active'},
+  {id:'r1',day:1,num:1,name:'Round 1',format:'2-Man Scramble',status:'scheduled'},
   {id:'r2',day:1,num:2,name:'Round 2',format:'Modified Alternate Shot',status:'scheduled'},
   {id:'r3',day:2,num:3,name:'Round 3',format:'2-Man Scramble',status:'scheduled'},
   {id:'r4',day:2,num:4,name:'Round 4',format:'4-Man Scramble',status:'scheduled'},
@@ -1337,21 +1352,16 @@ const COURSE_COMBOS = [
 ];
 
 const MATCHES = [
-  {id:'m1',roundId:'r1',nicPlayers:['matt','grant'],palPlayers:['marc','webby'],currentHole:8,scores:{1:[4,5],2:[2,3],3:[5,5],4:[4,4],5:[4,3],6:[2,3],7:[4,5]}},
-  {id:'m2',roundId:'r1',nicPlayers:['adam','jordan'],palPlayers:['jake','justin'],currentHole:8,scores:{1:[5,4],2:[3,3],3:[4,5],4:[4,3],5:[3,4],6:[3,4],7:[5,4]}},
-  {id:'m3',roundId:'r1',nicPlayers:['jordanb','john'],palPlayers:['rastani','mark'],currentHole:9,scores:{1:[4,4],2:[3,2],3:[5,5],4:[4,4],5:[4,3],6:[3,3],7:[5,4],8:[4,4]}},
+  {id:'m1',roundId:'r1',nicPlayers:['adam','matt'],palPlayers:['rastani','marc'],currentHole:1,scores:{}},
+  {id:'m2',roundId:'r1',nicPlayers:['grant','john'],palPlayers:['jake','webby'],currentHole:1,scores:{}},
+  {id:'m3',roundId:'r1',nicPlayers:['jordan','jordanb'],palPlayers:['justin','mark'],currentHole:1,scores:{}},
 ];
 
 const FEED_POSTS = [
-  {id:'f0',type:'bogey_alert',playerId:'matt',team:'nicklaus',time:'Just now',text:'<strong>Matthew Hoke</strong> 3-putted Hole 5. Shotgun obligation created! 🍺',shotgun:true,reactions:{}},
-  {id:'f1',type:'bogey_alert',playerId:'marc',team:'palmer',time:'2m ago',text:'<strong>Marc Schmalz</strong> 3-putted Hole 8. Shotgun obligation created! 🍺',shotgun:true,reactions:{laughing:['grant','adam'],'beer':['jordan','webby','jake','justin'],'skull':['jordanb','john']}},
-  {id:'f2',type:'birdie_alert',playerId:'grant',team:'nicklaus',time:'9m ago',text:'<strong>Matt & Grant</strong> birdied Hole 3! Team Nicklaus is heating up 🔥',shotgun:false,reactions:{fire:['marc','webby'],'golf':['jake','justin','rastani','mark']}},
-  {id:'f3',type:'score_event',playerId:'system',team:'system',time:'15m ago',text:'<strong>Jordan B & John</strong> vs <strong>Rastani & Mark</strong> — Palmer now leads 2UP through 7 holes.',shotgun:false,reactions:{fire:['mark','rastani','marc'],'skull':['jordanb','john'],'eyes':['matt','grant']}},
-  {id:'f4',type:'shotgun_video',playerId:'jordanb',team:'nicklaus',time:'32m ago',text:'<strong>Jordan B</strong> completed his shotgun obligation from Hole 3. That was impressive (and disgusting) 🎥',shotgun:false,reactions:{laughing:['matt','adam','jordan','john','marc','webby','jake','justin','rastani','mark'],'beer':['grant'],'fire':['mark']}},
-  {id:'f5',type:'score_event',playerId:'system',team:'system',time:'45m ago',text:'<strong>Round 1 has tipped off!</strong> May the best team win! ⛳',shotgun:false,reactions:{fire:['matt','grant','adam','jordan','jordanb','john','marc','webby','jake','justin','rastani','mark']}},
+  {id:'f0',type:'system',playerId:'system',team:'system',time:'Welcome',text:'<strong>Welcome to the Perry Park Cup 2026!</strong> Round 1 tees off tomorrow — set up your profile, check the matchups, and good luck! ⛳',shotgun:false,reactions:{}},
 ];
 
-const PLAYER_HOLES = {matt:8,grant:8,marc:8,webby:8,adam:8,jordan:8,jake:8,justin:8,jordanb:9,john:9,rastani:9,mark:9};
+const PLAYER_HOLES = {matt:1,grant:1,marc:1,webby:1,adam:1,jordan:1,jake:1,justin:1,jordanb:1,john:1,rastani:1,mark:1};
 const HOLE_COORDS_GPS = [
   // Antlers Course — Holes 1–9 (southwest loops around western lake)
   [38.5258, -85.0101],  // A1
@@ -1380,18 +1390,18 @@ const PROFILE_AVATARS = ['⛳','🏌️','🦅','🏆','🔥','⚡','💎','👑
 const S = {
   user: null, pin: '', selectedPlayer: null,
   tab: 'scores', selectedMatch: 'm1',
-  currentHoles: {m1:8,m2:8,m3:9},
+  currentHoles: {m1:1,m2:1,m3:1},
   entryScores: {m1:{a:0,b:0},m2:{a:0,b:0},m3:{a:0,b:0}},
-  matchScores: JSON.parse(JSON.stringify({m1:MATCHES[0].scores,m2:MATCHES[1].scores,m3:MATCHES[2].scores})),
+  matchScores: {m1:{},m2:{},m3:{}},
   reactions: JSON.parse(JSON.stringify(FEED_POSTS.reduce((acc,p)=>{acc[p.id]=p.reactions;return acc;},{}))),
   playerHoles: {...PLAYER_HOLES},
-  shotgunQueue: [{player:'matt',hole:5,team:'nicklaus'},{player:'marc',hole:8,team:'palmer'}],
-  pendingShotguns: {matt:true,marc:true},
+  shotgunQueue: [],
+  pendingShotguns: {},
   courseComboId: 'antlers_whitetail', courseLocked: false,
   captainTab: 'course', captainRoundTab: 'r1',
   pairings: {
-    r1:[{nic:['matt','grant'],pal:['marc','webby']},{nic:['adam','jordan'],pal:['jake','justin']},{nic:['jordanb','john'],pal:['rastani','mark']}],
-    r2:[{nic:[null,null],pal:[null,null]},{nic:[null,null],pal:[null,null]},{nic:[null,null],pal:[null,null]}],
+    r1:[{nic:['adam','matt'],pal:['rastani','marc']},{nic:['grant','john'],pal:['jake','webby']},{nic:['jordan','jordanb'],pal:['justin','mark']}],
+    r2:[{nic:['john','jordan'],pal:['webby','mark']},{nic:['grant','adam'],pal:['jake','marc']},{nic:['matt','jordanb'],pal:['justin','rastani']}],
     r3:[{nic:[null,null],pal:[null,null]},{nic:[null,null],pal:[null,null]},{nic:[null,null],pal:[null,null]}],
     r4:[{nic:[null,null,null,null],pal:[null,null,null,null]}],
   },
@@ -1656,9 +1666,65 @@ async function saveNewAccount() {
   S.user = CA.player;
   localStorage.setItem('ppc_user', S.user.id);
   showApp();
+  showTutorial();
 }
 
 function afterLogin() { showApp(); }
+
+// ── FIRST-USE TUTORIAL ──
+const TUT_STEPS = [
+  {title:'Live Scores', label:'Step 1 of 4', icon:'<svg fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="10"/></svg>',
+   text:'When a round starts, pick your tee time on the Scores tab and start your group. Enter one team score (and putts) per hole — everyone sees it instantly.'},
+  {title:'Standings', label:'Step 2 of 4', icon:'<svg fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M6 3h12v6a6 6 0 0 1-12 0V3zM6 5H3v2a4 4 0 0 0 3 3.87M18 5h3v2a4 4 0 0 1-3 3.87"/></svg>',
+   text:'House Nicklaus vs House Palmer. Track team points, match results, and who is carrying (or sandbagging for) their team.'},
+  {title:'The Feed & Shotgun Rule', label:'Step 3 of 4', icon:'<svg fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+   text:'Birdie alerts, lead changes, and trash talk live here. Fair warning: 3-putt a hole and the app posts your shotgun obligation for all to see. 🍺'},
+  {title:'Course Map', label:'Step 4 of 4', icon:'<svg fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>',
+   text:'See the course layout and where every group is on it. Tap "Update Location" on the map to share which hole you are playing.'},
+];
+let _tutStep = 0;
+
+function showTutorial() {
+  if (localStorage.getItem('ppc_tut_done')) return;
+  _tutStep = 0;
+  const el = document.createElement('div');
+  el.className = 'tut-overlay';
+  el.id = 'tutorial';
+  document.body.appendChild(el);
+  renderTutorial();
+}
+
+function renderTutorial() {
+  const el = document.getElementById('tutorial');
+  if (!el) return;
+  const s = TUT_STEPS[_tutStep];
+  const last = _tutStep === TUT_STEPS.length - 1;
+  el.innerHTML = `
+    <div class="tut-body">
+      <div class="tut-icon">${s.icon}</div>
+      <div class="tut-step-label">${s.label}</div>
+      <div class="tut-title">${s.title}</div>
+      <div class="tut-text">${s.text}</div>
+    </div>
+    <div>
+      <div class="tut-dots">${TUT_STEPS.map((_,i)=>`<div class="tut-dot ${i===_tutStep?'on':''}"></div>`).join('')}</div>
+      <button class="tut-btn" onclick="tutNext()">${last?"Let's Play":'Next'}</button>
+      ${last?'':'<button class="tut-skip" onclick="closeTutorial()">Skip tour</button>'}
+    </div>`;
+}
+
+function tutNext() {
+  if (navigator.vibrate) navigator.vibrate([20]);
+  if (_tutStep >= TUT_STEPS.length - 1) { closeTutorial(); return; }
+  _tutStep++;
+  renderTutorial();
+}
+
+function closeTutorial() {
+  localStorage.setItem('ppc_tut_done', '1');
+  const el = document.getElementById('tutorial');
+  if (el) el.remove();
+}
 
 function showApp() {
   document.getElementById('login').style.display = 'none';
@@ -2023,10 +2089,6 @@ function renderGroupScorecard(group, round) {
 // ── STANDINGS ──
 function renderStandings() {
   let nicPts=0, palPts=0;
-  ROUNDS.forEach(r => {
-    if (r.status==='active'||r.status==='completed') { nicPts+=1.5; palPts+=1.5; }
-  });
-  nicPts = 3.5; palPts = 2.5;
   const total = nicPts + palPts;
   const nicW = total > 0 ? (nicPts/total*100).toFixed(1) : 50;
   const palW = total > 0 ? (palPts/total*100).toFixed(1) : 50;
@@ -2071,7 +2133,7 @@ function renderStandings() {
           <div class="bar-nic" style="width:${nicW}%"></div>
           <div class="bar-pal" style="width:${palW}%"></div>
         </div>
-        <div class="leader-badge">${leader ? `<strong>${leader}</strong> leads the cup` : 'All Square after Round 1'}</div>
+        <div class="leader-badge">${leader ? `<strong>${leader}</strong> leads the cup` : 'All Square'}</div>
       </div>
     </div>
     <div class="section-header">Round Results</div>
@@ -2166,7 +2228,7 @@ function renderFeed() {
 function renderFeedPost(post) {
   const player = post.playerId==='system' ? null : PLAYERS.find(p=>p.id===post.playerId);
   const typeMap = {birdie_alert:'birdie',bogey_alert:'bogey',score_event:'system',shotgun_video:'shotgun',lead_change:'lead',manual_post:'system'};
-  const typeLabelMap = {birdie_alert:'Birdie',bogey_alert:'Bogey',score_event:'Score',shotgun_video:'🍺 Shotgun',lead_change:'Lead Change',manual_post:'Post'};
+  const typeLabelMap = {birdie_alert:'Birdie',bogey_alert:'Bogey',score_event:'Score',shotgun_video:'🍺 Shotgun',lead_change:'Lead Change',manual_post:'Post',system:'Update'};
   const reactions = S.reactions[post.id]||{};
   const myReactions = Object.entries(reactions).filter(([,players])=>players.includes(S.user.id)).map(([e])=>e);
   const avCls = post.type==='shotgun_video'?'shotgun-av':player?player.team:'system';
