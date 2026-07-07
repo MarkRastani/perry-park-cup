@@ -17,7 +17,8 @@
       "reactions": { ".write": "auth != null" },
       "comments": { ".write": "auth != null" },
       "fcmTokens": { ".write": "auth != null" },
-      "flags": { ".write": "auth != null" }
+      "flags": { ".write": "auth != null" },
+      "appVersion": { ".write": "auth != null", ".validate": "newData.isNumber()" }
     }
   }
 }

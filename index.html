@@ -4160,11 +4160,52 @@ function attachSyncListeners() {
     S.comments = s.val() || {};
     if (S.tab === 'feed') render();
   });
+
+  // Live version push: the first device to load a new deploy bumps this flag,
+  // and every other open device refreshes itself immediately
+  _fdb.ref('sync/appVersion').on('value', s => {
+    const v = parseInt(s.val()) || 0;
+    if (v < APP_VERSION) _fdb.ref('sync/appVersion').set(APP_VERSION).catch(()=>{});
+    else if (v > APP_VERSION) promptAppUpdate();
+  });
+}
+
+// ── LIVE APP UPDATES ──
+// Must match the numeric suffix of CACHE in sw.js — bump both on every deploy.
+const APP_VERSION = 14;
+let _updatePrompted = false;
+
+function promptAppUpdate() {
+  if (_updatePrompted) return;
+  // If a previous auto-reload in this session didn't get us a newer build
+  // (offline, CDN lag), don't reload-loop
+  try { if (sessionStorage.getItem('ppc_reloaded_v') === String(APP_VERSION)) return; } catch(e) {}
+  _updatePrompted = true;
+  try { sessionStorage.setItem('ppc_reloaded_v', String(APP_VERSION)); } catch(e) {}
+  try {
+    const bar = document.createElement('div');
+    bar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:1000;background:linear-gradient(135deg,#B8900A,#E8BE40);color:#1A1408;font:700 13px "Instrument Sans",sans-serif;text-align:center;padding:10px;padding-top:calc(env(safe-area-inset-top, 0px) + 10px)';
+    bar.textContent = 'New version available — updating…';
+    if (document.body) document.body.appendChild(bar);
+    if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistration().then(r => r && r.update()).catch(()=>{});
+  } catch(e) {}
+  setTimeout(() => location.reload(), 1200);   // the reload must happen even if the banner failed
+}
+
+// Probe the deployed sw.js (tiny, never SW-cached with no-store) for a newer build number
+function checkAppVersion() {
+  fetch('sw.js?v=' + Date.now(), {cache:'no-store'}).then(r => r.text()).then(t => {
+    const m = t.match(/perry-park-v(\d+)/);
+    if (m && parseInt(m[1]) > APP_VERSION) promptAppUpdate();
+  }).catch(()=>{});
 }
 
 // ── INIT ──
 if ('serviceWorker' in navigator) {
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+  // Re-check whenever the app returns to the foreground, plus a slow heartbeat
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) checkAppVersion(); });
+  setInterval(checkAppVersion, 5 * 60 * 1000);
 }
 
 MATCHES.forEach(m=>{

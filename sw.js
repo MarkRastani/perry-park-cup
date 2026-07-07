@@ -1,4 +1,4 @@
-const CACHE = 'perry-park-v13';
+const CACHE = 'perry-park-v14';
 const ASSETS = ['./', './index.html', './manifest.json', './icons/icon-192.svg'];
 
 self.addEventListener('install', e => {
@@ -13,6 +13,19 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  const url = new URL(e.request.url);
+  const isPage = e.request.mode === 'navigate' || url.pathname === '/' || url.pathname.endsWith('/index.html');
+  if (isPage) {
+    // Network-first for the app shell: one reopen always gets the latest deploy;
+    // the cache is only an offline fallback
+    e.respondWith(
+      fetch(e.request).then(res => {
+        if (res.ok) caches.open(CACHE).then(c => c.put(e.request, res.clone()));
+        return res;
+      }).catch(() => caches.match(e.request))
+    );
+    return;
+  }
   e.respondWith(
     caches.match(e.request).then(cached => {
       const network = fetch(e.request).then(res => {
