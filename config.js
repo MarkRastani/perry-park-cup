@@ -13,4 +13,4 @@ window.FIREBASE_CONFIG = {
 
 // Web-push certificate key pair from Firebase Console > Project settings > Cloud Messaging.
 // Leave empty to disable true push notifications.
-window.FIREBASE_VAPID_KEY = '';
+window.FIREBASE_VAPID_KEY = 'BN5Bo1axpyZCxCVjopCii3XcSCCCWsHVCdk5c4Ei294-jqhXWjFgE8z3KfqHebFE8IiNxBouneYKGZ25drypUDw';
