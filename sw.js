@@ -1,4 +1,4 @@
-const CACHE = 'perry-park-v9';
+const CACHE = 'perry-park-v10';
 const ASSETS = ['./', './index.html', './manifest.json', './icons/icon-192.svg'];
 
 self.addEventListener('install', e => {
@@ -26,13 +26,16 @@ self.addEventListener('fetch', e => {
 
 self.addEventListener('push', e => {
   if (!e.data) return;
-  const data = e.data.json();
-  e.waitUntil(self.registration.showNotification(data.title, {
-    body: data.body,
+  let data = {};
+  try { data = e.data.json(); } catch (err) { data = {body: e.data.text()}; }
+  // FCM webpush sends wrap the fields in a `notification` object; plain pushes don't
+  const n = data.notification || data;
+  e.waitUntil(self.registration.showNotification(n.title || 'Perry Park Cup', {
+    body: n.body || '',
     icon: './icons/icon-192.svg',
     badge: './icons/icon-192.svg',
-    tag: data.tag || 'perry-park',
-    data: data.url || './',
+    tag: n.tag || 'perry-park',
+    data: (data.fcmOptions && data.fcmOptions.link) || n.click_action || n.url || './',
     vibrate: [200, 100, 200]
   }));
 });

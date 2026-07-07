@@ -10,3 +10,7 @@ window.FIREBASE_CONFIG = {
   messagingSenderId: '221590775217',
   appId: '1:221590775217:web:8289d44dd90f4bde400990'
 };
+
+// Web-push certificate key pair from Firebase Console > Project settings > Cloud Messaging.
+// Leave empty to disable true push notifications.
+window.FIREBASE_VAPID_KEY = '';

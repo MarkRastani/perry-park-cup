@@ -19,6 +19,9 @@
 <script src='config.js'></script>
 <script src='https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js'></script>
 <script src='https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js'></script>
+<script src='https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js'></script>
+<script src='https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js'></script>
+<script src='https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js'></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden}
@@ -3052,16 +3055,21 @@ function composerPhotoChange(input) {
   });
 }
 
-// Videos go straight into the shared DB as data URLs, so keep them short — ~8MB max
+// With Firebase Storage videos upload as files (60MB cap); otherwise they inline
+// into the DB as data URLs, which only tolerates short clips (~8MB)
+let _composerVideoSize = 0;
+
 function composerVideoChange(input) {
   const file = input.files && input.files[0];
   input.value = '';
   if (!file) return;
-  if (file.size > 8 * 1024 * 1024) {
+  const capMB = (window.firebase && firebase.storage) ? 60 : 8;
+  if (file.size > capMB * 1024 * 1024) {
     document.getElementById('composer-photo-preview').innerHTML =
-      `<div style="padding:10px 12px;background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;font-size:13px;color:#B91C1C">That video is too large (max 8MB). Try a shorter clip.</div>`;
+      `<div style="padding:10px 12px;background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;font-size:13px;color:#B91C1C">That video is too large (max ${capMB}MB). Try a shorter clip.</div>`;
     return;
   }
+  _composerVideoSize = file.size;
   const reader = new FileReader();
   reader.onload = e => {
     _composerVideo = e.target.result;
@@ -3091,17 +3099,37 @@ function compressImage(file, maxDim, quality, cb) {
 function submitPost() {
   const text = document.getElementById('composer-text').value.trim();
   if (!text && !_composerPhoto && !_composerVideo) return;
-  pushFeedPost({
+  const fields = {
     type: _composerVideo ? 'video_post' : _composerPhoto ? 'photo_post' : 'manual_post',
     playerId: S.user.id, team: S.user.team,
     text: text ? `<strong>${S.user.name}</strong>: ${linkifyMentions(escapeHTML(text))}`
         : `<strong>${S.user.name}</strong> shared a ${_composerVideo ? 'video' : 'photo'}`,
     photo: _composerPhoto || null,
-    video: _composerVideo || null,
-  });
-  closeComposer();
-  if (navigator.vibrate) navigator.vibrate([40]);
-  if (S.tab!=='feed') navigate('feed');
+  };
+  const finish = video => {
+    pushFeedPost({...fields, video: video || null});
+    closeComposer();
+    if (navigator.vibrate) navigator.vibrate([40]);
+    if (S.tab!=='feed') navigate('feed');
+  };
+  if (_composerVideo && window.firebase && firebase.storage && _fdb) {
+    // Upload to Storage and post the download URL; fall back to inline data for small clips
+    const btn = document.getElementById('composer-post-btn');
+    btn.disabled = true; btn.textContent = 'Uploading…';
+    const inline = _composerVideo, size = _composerVideoSize;
+    fetch(inline).then(r => r.blob())
+      .then(blob => firebase.storage().ref('videos/v' + Date.now() + '-' + Math.random().toString(36).slice(2,6)).put(blob, {contentType: blob.type || 'video/mp4'}))
+      .then(snap => snap.ref.getDownloadURL())
+      .then(url => finish(url))
+      .catch(() => {
+        if (size <= 8 * 1024 * 1024) finish(inline);
+        else document.getElementById('composer-photo-preview').innerHTML =
+          `<div style="padding:10px 12px;background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;font-size:13px;color:#B91C1C">Upload failed and the clip is too big to send inline. Check your connection and try again.</div>`;
+      })
+      .finally(() => { btn.disabled = false; btn.textContent = 'Post'; });
+  } else {
+    finish(_composerVideo);
+  }
 }
 
 function escapeHTML(s){ return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -3144,10 +3172,27 @@ function submitComment(postId) {
 const _bootTs = Date.now();
 
 function initNotifications() {
-  if (!('Notification' in window) || Notification.permission !== 'default') return;
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'granted') { initFCM(); return; }
+  if (Notification.permission !== 'default') return;
   // iOS/Safari only allow the permission prompt from a user gesture — ask on the next tap
-  const ask = () => { Notification.requestPermission().catch(()=>{}); document.removeEventListener('click', ask); };
+  const ask = () => {
+    Notification.requestPermission().then(p => { if (p === 'granted') initFCM(); }).catch(()=>{});
+    document.removeEventListener('click', ask);
+  };
   document.addEventListener('click', ask, {once:true});
+}
+
+// True push (app closed): register this device's FCM token under the signed-in player.
+// No-op until a VAPID key is set in config.js and the push Cloud Function is deployed.
+function initFCM() {
+  if (!_fdb || !window.FIREBASE_VAPID_KEY || !firebase.messaging || !S.user) return;
+  if (!('serviceWorker' in navigator) || Notification.permission !== 'granted') return;
+  navigator.serviceWorker.ready.then(reg =>
+    firebase.messaging().getToken({vapidKey: window.FIREBASE_VAPID_KEY, serviceWorkerRegistration: reg})
+  ).then(token => {
+    if (token) _sync('fcmTokens/' + S.user.id + '/' + token.replace(/[^A-Za-z0-9_-]/g,'').slice(-24), token);
+  }).catch(()=>{});
 }
 
 function notifyPost(post) {
@@ -3809,6 +3854,26 @@ function initSync() {
     _fdb = firebase.database();
   } catch (e) { _fdb = null; return; }
 
+  // Sign in anonymously first: DB rules require auth, and listeners attached
+  // pre-auth would be cancelled with permission_denied. If the Anonymous
+  // provider isn't enabled yet (rules still open), attach anyway.
+  let _attached = false;
+  const attach = () => { if (!_attached) { _attached = true; attachSyncListeners(); } };
+  if (firebase.auth) {
+    firebase.auth().onAuthStateChanged(u => { if (u) attach(); });
+    firebase.auth().signInAnonymously().catch(() => attach());
+  } else attach();
+
+  // Any post added locally (score alerts, shotguns, announcements) publishes to the shared feed
+  const _origUnshift = Array.prototype.unshift.bind(FEED_POSTS);
+  FEED_POSTS.unshift = function(...posts) {
+    const r = _origUnshift(...posts);
+    posts.forEach(p => _sync('feed/' + p.id, p));
+    return r;
+  };
+}
+
+function attachSyncListeners() {
   // Firebase coerces numeric-keyed objects (scores, putts) into sparse arrays; undo that
   const _deArray = obj => {
     if (!Array.isArray(obj)) return obj || {};
@@ -3890,14 +3955,6 @@ function initSync() {
     S.comments = s.val() || {};
     if (S.tab === 'feed') render();
   });
-
-  // Any post added locally (score alerts, shotguns, announcements) publishes to the shared feed
-  const _origUnshift = Array.prototype.unshift.bind(FEED_POSTS);
-  FEED_POSTS.unshift = function(...posts) {
-    const r = _origUnshift(...posts);
-    posts.forEach(p => _sync('feed/' + p.id, p));
-    return r;
-  };
 }
 
 // ── INIT ──
