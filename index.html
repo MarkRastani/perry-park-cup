@@ -2758,7 +2758,16 @@ function initMapboxMap() {
     attributionControl: false,
   });
   _mbMap.addControl(new mapboxgl.NavigationControl({showCompass:false}), 'top-right');
-  _mbMap.on('load', () => { refreshPlayerMarkers(); });
+  _mbMap.on('load', () => {
+    addMapHoleMarkers();
+    refreshPlayerMarkers();
+    // Nudge across a tile-zoom boundary — without this the satellite layer
+    // stays blank until the user manually zooms (tiles never requested)
+    _mbMap.resize();
+    const z = _mbMap.getZoom();
+    _mbMap.setZoom(Math.round(z + .5));
+    setTimeout(() => _mbMap.setZoom(z), 400);
+  });
 }
 
 function addMapHoleMarkers() {
