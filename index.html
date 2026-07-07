@@ -1095,6 +1095,24 @@ tr.mu-total td{background:linear-gradient(180deg,#0A3020,#0D3828);color:#fff;fon
 .composer-photo-btn{display:flex;align-items:center;gap:7px;padding:12px 18px;border-radius:12px;border:1.5px solid var(--border2);background:var(--card);color:var(--tm);font-family:'Instrument Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer}
 .composer-post-btn{flex:1;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--g2),var(--g3));color:#fff;font-family:'Instrument Sans',sans-serif;font-size:15px;font-weight:700;cursor:pointer}
 .composer-post-btn:disabled{opacity:.5}
+.composer-photo-preview video{max-width:100%;max-height:200px;border-radius:12px;display:block}
+.fp-photo video{width:100%;max-height:340px;border-radius:12px;display:block;background:#000}
+.mention{color:var(--g2);font-weight:700}
+.fp-comment-toggle{display:flex;align-items:center;gap:6px;margin-left:auto;padding:5px 10px;border-radius:20px;background:var(--card2);border:1px solid var(--border);font-size:12px;font-weight:600;color:var(--tm);cursor:pointer;user-select:none}
+.fp-comments{margin-top:10px;border-top:1px solid var(--border);padding-top:10px}
+.fpc-row{display:flex;gap:8px;margin-bottom:8px;align-items:flex-start}
+.fpc-av{width:26px;height:26px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;overflow:hidden}
+.fpc-av.nic{background:var(--nic-bg2);border:1px solid var(--nic-border)}
+.fpc-av.pal{background:var(--pal-bg2);border:1px solid var(--pal-border)}
+.fpc-av span{font-family:'Bricolage Grotesque',sans-serif;font-size:9px;font-weight:900}
+.fpc-bubble{background:var(--card2);border-radius:4px 14px 14px 14px;padding:7px 11px;max-width:85%}
+.fpc-name{font-size:11px;font-weight:800;color:var(--t2);margin-bottom:1px}
+.fpc-text{font-size:13px;color:var(--t1);line-height:1.45;word-break:break-word}
+.fpc-time{font-size:10px;color:var(--tm);margin-top:2px}
+.fpc-input-row{display:flex;gap:8px;margin-top:4px}
+.fpc-input{flex:1;border:1.5px solid var(--border2);border-radius:20px;padding:8px 14px;font-family:'Instrument Sans',sans-serif;font-size:13px;color:var(--t1);background:var(--card2);outline:none}
+.fpc-input:focus{border-color:var(--g3)}
+.fpc-send{width:36px;height:36px;border-radius:50%;border:none;background:linear-gradient(135deg,var(--g2),var(--g3));color:#fff;font-size:15px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center}
 .fp-photo{margin:0 14px 12px;border-radius:12px;overflow:hidden}
 .fp-photo img{width:100%;display:block;max-height:340px;object-fit:cover}
 </style>
@@ -1319,9 +1337,14 @@ tr.mu-total td{background:linear-gradient(180deg,#0A3020,#0D3828);color:#fff;fon
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="4"/><path d="M9 6l1.5-2.5h3L15 6"/></svg>
           Photo
         </button>
+        <button class="composer-photo-btn" onclick="document.getElementById('composer-video-input').click()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M22 8.5v7L16 12z"/></svg>
+          Video
+        </button>
         <button class="composer-post-btn" id="composer-post-btn" onclick="submitPost()">Post</button>
       </div>
       <input type="file" id="composer-photo-input" accept="image/*" style="display:none" onchange="composerPhotoChange(this)">
+      <input type="file" id="composer-video-input" accept="video/*" style="display:none" onchange="composerVideoChange(this)">
     </div>
   </div>
 
@@ -1550,6 +1573,8 @@ const S = {
   matchScores: {m1:{},m2:{},m3:{}},
   reactions: JSON.parse(JSON.stringify(FEED_POSTS.reduce((acc,p)=>{acc[p.id]=p.reactions;return acc;},{}))),
   playerHoles: {...PLAYER_HOLES},
+  comments: {},
+  openComments: {},
   shotgunQueue: [],
   pendingShotguns: {},
   courseComboId: 'antlers_whitetail', courseLocked: false,
@@ -1909,6 +1934,7 @@ function showApp() {
   findMyGroup();
   navigate('scores');
   checkShotgunQueue();
+  initNotifications();
 }
 
 function updateHeaderAvatar() {
@@ -2095,7 +2121,11 @@ function navigate(tab) {
 function render() {
   const c = document.getElementById('content');
   const renderers = {scores:renderScores,standings:renderStandings,map:renderMap,feed:renderFeed,rules:renderRules};
+  // A live-sync re-render must not eat a reply the user is typing
+  const drafts = {};
+  c.querySelectorAll('.fpc-input').forEach(el => { if (el.value) drafts[el.id] = el.value; });
   c.innerHTML = renderers[S.tab]();
+  Object.entries(drafts).forEach(([id, val]) => { const el = document.getElementById(id); if (el) el.value = val; });
   attachTabEvents();
 }
 
@@ -2534,9 +2564,10 @@ function renderFeed() {
 
 function renderFeedPost(post) {
   const player = post.playerId==='system' ? null : PLAYERS.find(p=>p.id===post.playerId);
-  const typeMap = {birdie_alert:'birdie',eagle_alert:'birdie',bogey_alert:'bogey',three_putt:'bogey',score_event:'system',shotgun_video:'shotgun',lead_change:'lead',round_complete:'lead',manual_post:'system',photo_post:'system'};
-  const typeLabelMap = {birdie_alert:'Birdie',eagle_alert:'Eagle',bogey_alert:'Bogey',three_putt:'3-Putt',score_event:'Score',shotgun_video:'🍺 Shotgun',lead_change:'Lead Change',round_complete:'Round Final',manual_post:'Post',photo_post:'Photo',system:'Update'};
+  const typeMap = {birdie_alert:'birdie',eagle_alert:'birdie',bogey_alert:'bogey',three_putt:'bogey',score_event:'system',shotgun_video:'shotgun',lead_change:'lead',round_complete:'lead',manual_post:'system',photo_post:'system',video_post:'system'};
+  const typeLabelMap = {birdie_alert:'Birdie',eagle_alert:'Eagle',bogey_alert:'Bogey',three_putt:'3-Putt',score_event:'Score',shotgun_video:'🍺 Shotgun',lead_change:'Lead Change',round_complete:'Round Final',manual_post:'Post',photo_post:'Photo',video_post:'Video',system:'Update'};
   const reactions = S.reactions[post.id]||{};
+  const comments = postComments(post.id);
   const myReactions = Object.entries(reactions).filter(([,players])=>players.includes(S.user.id)).map(([e])=>e);
   const avCls = post.type==='shotgun_video'?'shotgun-av':player?player.team:'system';
   const av = player ? (getPlayerAvatar(player) || player.initials) : '⛳';
@@ -2552,12 +2583,43 @@ function renderFeedPost(post) {
       </div>
       ${post.shotgun?`<div class="fp-shotgun-alert"><div class="fp-sa-icon">🍺</div><div class="fp-sa-text"><strong>Shotgun Obligation Created</strong>${post.text.replace(/<[^>]+>/g,'').split('.')[0]}. Shotgun required!</div></div>`:`<div class="fp-body">${post.text}</div>`}
       ${post.photo?`<div class="fp-photo"><img src="${post.photo}" loading="lazy"></div>`:''}
+      ${post.video?`<div class="fp-photo"><video src="${post.video}" controls playsinline preload="metadata"></video></div>`:''}
       <div class="fp-reactions">
         ${Object.entries(REACTION_EMOJIS).map(([key,emoji])=>{
           const count=(reactions[key]||[]).length;
           const reacted=myReactions.includes(key);
           return `<div class="reaction-btn${reacted?' reacted':''}" onclick="toggleReaction('${post.id}','${key}')">${emoji}${count>0?`<span>${count}</span>`:''}</div>`;
         }).join('')}
+        <div class="fp-comment-toggle" onclick="toggleComments('${post.id}')">💬${comments.length?`<span>${comments.length}</span>`:' Reply'}</div>
+      </div>
+      ${S.openComments[post.id]?renderComments(post, comments):''}
+    </div>`;
+}
+
+function postComments(postId) {
+  return Object.values(S.comments[postId] || {}).filter(c=>c&&c.text).sort((a,b)=>(a.ts||0)-(b.ts||0));
+}
+
+function renderComments(post, comments) {
+  return `
+    <div class="fp-comments">
+      ${comments.map(c=>{
+        const cp = PLAYERS.find(p=>p.id===c.playerId);
+        const pic = cp && getProfilePic(cp.id);
+        const av = pic ? `<img src="${pic}" style="width:100%;height:100%;object-fit:cover">` : cp ? (getPlayerAvatar(cp)||`<span>${cp.initials}</span>`) : '⛳';
+        return `<div class="fpc-row">
+          <div class="fpc-av ${cp?(cp.team==='nicklaus'?'nic':'pal'):''}">${av}</div>
+          <div class="fpc-bubble">
+            <div class="fpc-name">${cp?cp.name:'Unknown'}</div>
+            <div class="fpc-text">${linkifyMentions(escapeHTML(c.text))}</div>
+            <div class="fpc-time">${feedTime(c)}</div>
+          </div>
+        </div>`;
+      }).join('')}
+      <div class="fpc-input-row">
+        <input class="fpc-input" id="fpc-input-${post.id}" placeholder="Reply..." maxlength="300"
+          onkeydown="if(event.key==='Enter'){submitComment('${post.id}')}">
+        <button class="fpc-send" onclick="submitComment('${post.id}')">➤</button>
       </div>
     </div>`;
 }
@@ -2840,9 +2902,11 @@ function feedTime(post) {
 }
 
 let _composerPhoto = null;
+let _composerVideo = null;
 
 function newPost() {
   _composerPhoto = null;
+  _composerVideo = null;
   document.getElementById('composer-text').value = '';
   document.getElementById('composer-photo-preview').innerHTML = '';
   document.getElementById('composer-modal').classList.add('open');
@@ -2857,8 +2921,28 @@ function composerPhotoChange(input) {
   if (!file) return;
   compressImage(file, 900, .72, dataUrl => {
     _composerPhoto = dataUrl;
+    _composerVideo = null;
     document.getElementById('composer-photo-preview').innerHTML = `<img src="${dataUrl}">`;
   });
+}
+
+// Videos go straight into the shared DB as data URLs, so keep them short — ~8MB max
+function composerVideoChange(input) {
+  const file = input.files && input.files[0];
+  input.value = '';
+  if (!file) return;
+  if (file.size > 8 * 1024 * 1024) {
+    document.getElementById('composer-photo-preview').innerHTML =
+      `<div style="padding:10px 12px;background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;font-size:13px;color:#B91C1C">That video is too large (max 8MB). Try a shorter clip.</div>`;
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = e => {
+    _composerVideo = e.target.result;
+    _composerPhoto = null;
+    document.getElementById('composer-photo-preview').innerHTML = `<video src="${_composerVideo}" controls playsinline muted></video>`;
+  };
+  reader.readAsDataURL(file);
 }
 
 function compressImage(file, maxDim, quality, cb) {
@@ -2880,12 +2964,14 @@ function compressImage(file, maxDim, quality, cb) {
 
 function submitPost() {
   const text = document.getElementById('composer-text').value.trim();
-  if (!text && !_composerPhoto) return;
+  if (!text && !_composerPhoto && !_composerVideo) return;
   pushFeedPost({
-    type: _composerPhoto ? 'photo_post' : 'manual_post',
+    type: _composerVideo ? 'video_post' : _composerPhoto ? 'photo_post' : 'manual_post',
     playerId: S.user.id, team: S.user.team,
-    text: text ? `<strong>${S.user.name}</strong>: ${escapeHTML(text)}` : `<strong>${S.user.name}</strong> shared a photo`,
+    text: text ? `<strong>${S.user.name}</strong>: ${linkifyMentions(escapeHTML(text))}`
+        : `<strong>${S.user.name}</strong> shared a ${_composerVideo ? 'video' : 'photo'}`,
     photo: _composerPhoto || null,
+    video: _composerVideo || null,
   });
   closeComposer();
   if (navigator.vibrate) navigator.vibrate([40]);
@@ -2893,6 +2979,67 @@ function submitPost() {
 }
 
 function escapeHTML(s){ return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// @mentions: highlight @First or @FullName for any player (case-insensitive). Run AFTER escapeHTML.
+function linkifyMentions(html) {
+  return html.replace(/@([A-Za-z]+)(?: ([A-Za-z]+))?/g, (match, first, second) => {
+    if (second && PLAYERS.some(p => p.name.toLowerCase() === `${first} ${second}`.toLowerCase()))
+      return `<span class="mention">@${first} ${second}</span>`;
+    if (PLAYERS.some(p => p.name.split(' ')[0].toLowerCase() === first.toLowerCase()))
+      return `<span class="mention">@${first}</span>` + (second ? ' ' + second : '');
+    return match;
+  });
+}
+
+// ── COMMENTS / REPLIES ──
+function toggleComments(postId) {
+  S.openComments[postId] = !S.openComments[postId];
+  render();
+  if (S.openComments[postId]) {
+    const inp = document.getElementById('fpc-input-' + postId);
+    if (inp) inp.focus();
+  }
+}
+
+function submitComment(postId) {
+  const inp = document.getElementById('fpc-input-' + postId);
+  const text = inp ? inp.value.trim() : '';
+  if (!text) return;
+  const c = {id:'c'+Date.now()+Math.random().toString(36).slice(2,6), playerId:S.user.id, text, ts:Date.now()};
+  if (!S.comments[postId]) S.comments[postId] = {};
+  S.comments[postId][c.id] = c;
+  _sync('comments/' + postId + '/' + c.id, c);
+  render();
+  const again = document.getElementById('fpc-input-' + postId);
+  if (again) again.focus();
+}
+
+// ── NOTIFICATIONS (Web Notifications; fires when the app is backgrounded) ──
+const _bootTs = Date.now();
+
+function initNotifications() {
+  if (!('Notification' in window) || Notification.permission !== 'default') return;
+  // iOS/Safari only allow the permission prompt from a user gesture — ask on the next tap
+  const ask = () => { Notification.requestPermission().catch(()=>{}); document.removeEventListener('click', ask); };
+  document.addEventListener('click', ask, {once:true});
+}
+
+function notifyPost(post) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  if (!post.ts || post.ts < _bootTs) return;              // ignore history replayed on connect
+  if (S.user && post.playerId === S.user.id) return;       // never notify about your own post
+  const body = (post.text||'').replace(/<[^>]+>/g,'');
+  const mentioned = S.user && body.toLowerCase().includes('@' + S.user.name.split(' ')[0].toLowerCase());
+  if (!document.hidden && !mentioned) return;              // in-app + not mentioned → feed is enough
+  const title = mentioned ? 'You were mentioned' :
+    {birdie_alert:'🐦 Birdie!',eagle_alert:'🦅 Eagle alert!',three_putt:'🍺 Shotgun time',lead_change:'👑 Lead change',round_complete:'🏁 Round complete',shotgun_video:'🍺 Shotgun done'}[post.type] || 'Perry Park Cup';
+  try {
+    navigator.serviceWorker.getRegistration().then(reg => {
+      if (reg && reg.showNotification) reg.showNotification(title, {body, icon:'./icons/icon-192.svg', badge:'./icons/icon-192.svg', tag:post.id, vibrate:[200,100,200]});
+      else new Notification(title, {body, icon:'./icons/icon-192.svg', tag:post.id});
+    }).catch(()=>{});
+  } catch(e) {}
+}
 
 // ── SHOTGUN ──
 function checkShotgunQueue() {
@@ -2921,6 +3068,10 @@ function recordShotgun() {
   closeShotgunModal();
   S.shotgunQueue.shift();
   pushFeedPost({type:'shotgun_video', playerId:S.user.id, team:S.user.team, text:`<strong>${S.user.name}</strong> completed their shotgun! 🍺🎥`});
+  // Rules require video proof in the feed — open the composer ready to attach it
+  if (S.tab !== 'feed') navigate('feed');
+  newPost();
+  document.getElementById('composer-text').value = 'Shotgun proof 🍺';
 }
 
 // ── PROFILE ──
@@ -3028,7 +3179,7 @@ function lockCourse() {
   S.courseLocked=true;
   const combo=COURSE_COMBOS.find(c=>c.id===S.courseComboId);
   combo.pars.forEach((p,i)=>PARS[i]=p);
-  FEED_POSTS.unshift({id:'f'+Date.now(),type:'system',playerId:'system',team:'system',time:'Just now',text:`<strong>Captain ${S.user.name}</strong> locked in the course: <strong>${combo.name}</strong>. Let's play! ⛳`,shotgun:false,reactions:{}});
+  pushFeedPost({type:'system',playerId:'system',team:'system',text:`<strong>Captain ${S.user.name}</strong> locked in the course: <strong>${combo.name}</strong>. Let's play! ⛳`});
   switchCaptainTab('course');
   if (navigator.vibrate) navigator.vibrate([50,30,100]);
 }
@@ -3071,7 +3222,7 @@ function savePairings() {
   const round=ROUNDS.find(r=>r.id===S.captainRoundTab);
   const pairings=S.pairings[S.captainRoundTab];
   if (S.captainRoundTab==='r1') pairings.forEach((p,i)=>{if(MATCHES[i]){MATCHES[i].nicPlayers=p.nic.filter(Boolean);MATCHES[i].palPlayers=p.pal.filter(Boolean);}});
-  FEED_POSTS.unshift({id:'f'+Date.now(),type:'system',playerId:'system',team:'system',time:'Just now',text:`<strong>Captain ${S.user.name}</strong> set pairings for <strong>${round.name}</strong>. Check Scores! ⛳`,shotgun:false,reactions:{}});
+  pushFeedPost({type:'system',playerId:'system',team:'system',text:`<strong>Captain ${S.user.name}</strong> set pairings for <strong>${round.name}</strong>. Check Scores! ⛳`});
   if (navigator.vibrate) navigator.vibrate([50]);
   alert(`✅ Pairings saved for ${round.name}!`);
   if (S.tab==='scores') render();
@@ -3100,7 +3251,7 @@ function startRound(roundId) {
   saveRoundStatus();
   S.myGroupId = null;
   findMyGroup();
-  FEED_POSTS.unshift({id:'f'+Date.now(),type:'system',playerId:'system',team:'system',time:'Just now',text:`<strong>${r.name} has started!</strong> Format: ${r.format}. Good luck! ⛳`,shotgun:false,reactions:{}});
+  pushFeedPost({type:'system',playerId:'system',team:'system',text:`<strong>${r.name} has started!</strong> Format: ${r.format}. Good luck! ⛳`});
   switchCaptainTab('rounds');
   if (S.tab==='scores'||S.tab==='standings') render();
 }
@@ -3110,7 +3261,7 @@ function completeRound(roundId) {
   if (!r) return;
   r.status='completed';
   saveRoundStatus();
-  FEED_POSTS.unshift({id:'f'+Date.now(),type:'system',playerId:'system',team:'system',time:'Just now',text:`<strong>${r.name} is complete!</strong> Check Standings for results. 🏆`,shotgun:false,reactions:{}});
+  pushFeedPost({type:'system',playerId:'system',team:'system',text:`<strong>${r.name} is complete!</strong> Check Standings for results. 🏆`});
   switchCaptainTab('rounds');
   if (S.tab==='scores'||S.tab==='standings') render();
 }
@@ -3598,11 +3749,18 @@ function initSync() {
     const post = s.val();
     if (!post || FEED_POSTS.some(p => p.id === post.id)) return;
     Array.prototype.unshift.call(FEED_POSTS, post);
+    FEED_POSTS.sort((a,b)=>(b.ts||0)-(a.ts||0));
+    notifyPost(post);
     if (S.tab === 'feed') render();
   });
 
   _fdb.ref('sync/reactions').on('value', s => {
     Object.assign(S.reactions, s.val() || {});
+    if (S.tab === 'feed') render();
+  });
+
+  _fdb.ref('sync/comments').on('value', s => {
+    S.comments = s.val() || {};
     if (S.tab === 'feed') render();
   });
 
