@@ -2432,7 +2432,9 @@ function renderGroupScorecard(group, round) {
         <div class="quick-btn qb-par" onclick="setGroupQuick('par')">Par</div>
         <div class="quick-btn qb-bogey" onclick="setGroupQuick('bogey')">Bogey</div>
       </div>
-      <button class="save-btn" onclick="saveGroupScore()">Save Score &amp; Next Hole</button>
+      ${shotgunBlocked(group)
+        ? `<button class="save-btn" style="background:linear-gradient(135deg,#D97706,#F59E0B)" onclick="recordShotgun()">🍺 Shotgun video required — record it now</button>`
+        : `<button class="save-btn" onclick="saveGroupScore()">Save Score &amp; Next Hole</button>`}
     </div>
     <div class="scorecard-wrap">
       <div class="scorecard-label">Scorecard · ${diffStr}</div>
@@ -2738,15 +2740,17 @@ function renderMap() {
 const REACTION_EMOJIS = {laughing:'😂',beer:'🍻',fire:'🔥',skull:'💀',golf:'⛳',eyes:'👀'};
 
 function renderFeed() {
-  const myObligation = flagOn('shotgunRule') ? S.shotgunQueue.find(s => s.player === S.user.id) : null;
+  const myGroup = S.myGroupId && S.groups[S.myGroupId];
+  const due = flagOn('shotgunRule') && myGroup && myGroup.shotgunDue ? myGroup.shotgunDue : null;
+  const dueLbl = due ? (comboFor(myGroup.roundId).holeLabels[due.hole-1] || `Hole ${due.hole}`) : '';
   return `
-    ${myObligation?`<div style="margin:12px 12px 0;background:linear-gradient(135deg,#FFF7ED,#FFEDD5);border:2px solid #FED0A0;border-radius:var(--r);padding:14px 16px;display:flex;align-items:center;gap:12px">
+    ${due?`<div style="margin:12px 12px 0;background:linear-gradient(135deg,#FFF7ED,#FFEDD5);border:2px solid #FED0A0;border-radius:var(--r);padding:14px 16px;display:flex;align-items:center;gap:12px">
       <div style="font-size:28px;animation:bounce-beer 1s ease-in-out infinite">🍺</div>
       <div>
         <div style="font-family:'Bricolage Grotesque',sans-serif;font-size:16px;font-weight:900;color:var(--orange)">SHOTGUN PENDING</div>
-        <div style="font-size:13px;color:#903010;font-weight:500">You 3-putted Hole ${myObligation.hole}. Time to drink! 🍺</div>
+        <div style="font-size:13px;color:#903010;font-weight:500">Your group 3-putted ${dueLbl}. Post the shotgun video to keep scoring!</div>
       </div>
-      <button onclick="openShotgunModal('${S.user.id}',${myObligation.hole},'3-putt')" style="margin-left:auto;background:var(--orange);color:#fff;border:none;border-radius:10px;padding:8px 14px;font-family:'Bricolage Grotesque',sans-serif;font-size:14px;font-weight:800;cursor:pointer">Record</button>
+      <button onclick="recordShotgun()" style="margin-left:auto;background:var(--orange);color:#fff;border:none;border-radius:10px;padding:8px 14px;font-family:'Bricolage Grotesque',sans-serif;font-size:14px;font-weight:800;cursor:pointer">Record</button>
     </div>`:''}
     <div class="section-header">Live Feed</div>
     ${FEED_POSTS.map(post=>renderFeedPost(post)).join('')}
@@ -2933,10 +2937,24 @@ function saveScore() {
   render();
 }
 
+// Shotgun rule: after a 3-putt the group owes a shotgun VIDEO to the feed
+// before they may enter their next new hole (edits to played holes stay open)
+function shotgunBlocked(group) {
+  if (!flagOn('shotgunRule') || !group || !group.shotgunDue) return false;
+  const h = group.currentHole || 1;
+  return group.shotgunDue.hole !== h && (group.scores||{})[h] == null;
+}
+
 function saveGroupScore() {
   if (!S.myGroupId || !S.groups[S.myGroupId]) return;
   const group = S.groups[S.myGroupId];
   const h = group.currentHole || 1;
+  if (shotgunBlocked(group)) {
+    const due = group.shotgunDue;
+    showToast('🍺 <strong>Shotgun video required</strong> before your next score!', false);
+    setTimeout(()=>openShotgunModal(due.playerId||S.user.id, due.hole, '3-putt'), 400);
+    return;
+  }
   const par = PARS[h-1];
   const sc = S.groupEntryScore || par;
   const putts = S.groupEntryPutts !== undefined ? S.groupEntryPutts : 2;
@@ -2948,6 +2966,8 @@ function saveGroupScore() {
   const prevPutts = group.putts[h] ?? null;
   group.scores[h] = sc;
   group.putts[h] = putts;
+  const madeShotgun = putts >= 3 && flagOn('shotgunRule') && !group.shotgunDue;
+  if (madeShotgun) group.shotgunDue = {hole:h, playerId:S.user.id, ts:Date.now()};
   if (putts >= 3 && flagOn('shotgunRule')) setTimeout(()=>openShotgunModal(S.user.id, h, '3-putt'), 500);
   const postIds = firstEntry ? postScoreEvents(group, h, sc, putts, par, leaderBefore) : [];
   group.currentHole = Math.min(18, h+1);
@@ -2957,7 +2977,7 @@ function saveGroupScore() {
   saveGroupsLocal();
   // Confirmation: distinct success haptic + undo toast
   if (navigator.vibrate) navigator.vibrate([30,40,60]);
-  S._lastEntry = {gid:S.myGroupId, h, prevScore, prevPutts, firstEntry, postIds};
+  S._lastEntry = {gid:S.myGroupId, h, prevScore, prevPutts, firstEntry, postIds, madeShotgun};
   const holeLbl = comboFor(group.roundId).holeLabels[h-1] || `Hole ${h}`;
   showToast(`<strong>${holeLbl}</strong> saved · ${sc} (${scoreLabel(sc,par)}) · ${putts} putt${putts===1?'':'s'}`, true);
   render();
@@ -2988,6 +3008,8 @@ function undoLastScore() {
   const g = S.groups[e.gid];
   if (e.prevScore == null) { delete g.scores[e.h]; if (g.putts) delete g.putts[e.h]; }
   else { g.scores[e.h] = e.prevScore; if (e.prevPutts != null) g.putts[e.h] = e.prevPutts; }
+  // If the undone entry created the shotgun obligation, retract that too
+  if (e.madeShotgun && g.shotgunDue && g.shotgunDue.hole === e.h) delete g.shotgunDue;
   // Retract any auto feed events this entry created (birdie posts, milestones, …)
   (e.postIds||[]).forEach(id => {
     const i = FEED_POSTS.findIndex(p => p.id === id);
@@ -3261,14 +3283,19 @@ function compressImage(file, maxDim, quality, cb) {
 function submitPost() {
   const text = document.getElementById('composer-text').value.trim();
   if (!text && !_composerPhoto && !_composerVideo) return;
+  // A video from an obligated group settles their shotgun debt
+  const myGroup = S.myGroupId && S.groups[S.myGroupId];
+  const settlesShotgun = !!(_composerVideo && flagOn('shotgunRule') && myGroup && myGroup.shotgunDue);
   const fields = {
-    type: _composerVideo ? 'video_post' : _composerPhoto ? 'photo_post' : 'manual_post',
+    type: settlesShotgun ? 'shotgun_video' : _composerVideo ? 'video_post' : _composerPhoto ? 'photo_post' : 'manual_post',
     playerId: S.user.id, team: S.user.team,
-    text: text ? `<strong>${S.user.name}</strong>: ${linkifyMentions(escapeHTML(text))}`
+    text: settlesShotgun ? `<strong>${S.user.name}</strong> completed their shotgun! 🍺🎥${text?` — ${linkifyMentions(escapeHTML(text))}`:''}`
+        : text ? `<strong>${S.user.name}</strong>: ${linkifyMentions(escapeHTML(text))}`
         : `<strong>${S.user.name}</strong> shared a ${_composerVideo ? 'video' : 'photo'}`,
     photo: _composerPhoto || null,
   };
   const finish = video => {
+    if (settlesShotgun) { delete myGroup.shotgunDue; saveGroupsLocal(); }
     pushFeedPost({...fields, video: video || null});
     closeComposer();
     if (navigator.vibrate) navigator.vibrate([40]);
@@ -3382,9 +3409,9 @@ function notifyPost(post) {
 // ── SHOTGUN ──
 function checkShotgunQueue() {
   if (!flagOn('shotgunRule')) return;
-  const myObligation = S.shotgunQueue.find(s => s.player === S.user.id);
-  if (myObligation) {
-    setTimeout(()=>openShotgunModal(S.user.id, myObligation.hole, '3-putt'), 1200);
+  const g = S.myGroupId && S.groups[S.myGroupId];
+  if (g && g.shotgunDue) {
+    setTimeout(()=>openShotgunModal(g.shotgunDue.playerId || S.user.id, g.shotgunDue.hole, '3-putt'), 1200);
   }
 }
 
@@ -3405,9 +3432,8 @@ function closeShotgunModal() {
 
 function recordShotgun() {
   closeShotgunModal();
-  S.shotgunQueue.shift();
-  pushFeedPost({type:'shotgun_video', playerId:S.user.id, team:S.user.team, text:`<strong>${S.user.name}</strong> completed their shotgun! 🍺🎥`});
-  // Rules require video proof in the feed — open the composer ready to attach it
+  // The obligation only clears when a VIDEO is actually posted — open the
+  // composer ready to attach it (submitPost settles the debt)
   if (S.tab !== 'feed') navigate('feed');
   newPost();
   document.getElementById('composer-text').value = 'Shotgun proof 🍺';
@@ -3682,7 +3708,15 @@ function renderCaptainAdmin() {
         <button class="admin-action-btn amber" onclick="resetPin('${p.id}','${p.name}')">Reset PIN</button>
       </div>`).join('')}
     <div class="admin-section-title" style="margin-top:20px">Shotgun Obligations</div>
-    ${S.shotgunQueue.length===0?`<div style="text-align:center;padding:20px;color:var(--tm);font-size:13px">No pending shotguns 🍺</div>`:S.shotgunQueue.map(sq=>{const p=PLAYERS.find(x=>x.id===sq.player);return `<div class="admin-row"><div><div class="admin-row-label">${p?.name} — Hole ${sq.hole}</div><div class="admin-row-sub">Bogey · ${TEAMS[sq.team]?.name}</div></div><button class="admin-action-btn amber" onclick="waiveShotgun('${sq.player}')">Waive</button></div>`;}).join('')}`;
+    ${(()=>{
+      const due = Object.entries(S.groups).filter(([,g])=>g.shotgunDue);
+      if (!due.length) return `<div style="text-align:center;padding:20px;color:var(--tm);font-size:13px">No pending shotguns 🍺</div>`;
+      return due.map(([gid,g])=>{
+        const names = (g.players||[]).map(id=>PLAYERS.find(p=>p.id===id)).filter(Boolean).map(p=>p.name.split(' ')[0]).join(' & ');
+        const lbl = comboFor(g.roundId).holeLabels[g.shotgunDue.hole-1] || `Hole ${g.shotgunDue.hole}`;
+        return `<div class="admin-row"><div><div class="admin-row-label">${names} — ${lbl}</div><div class="admin-row-sub">3-putt · video pending</div></div><button class="admin-action-btn amber" onclick="waiveShotgun('${gid}')">Waive</button></div>`;
+      }).join('');
+    })()}`;
 }
 
 function setAdminScoreRound(id) { S._adminScoreRound = id; switchCaptainTab('admin'); }
@@ -3721,10 +3755,13 @@ function resetPin(playerId,name) {
   alert(`✅ ${name}'s PIN reset to 1234.`);
 }
 
-function waiveShotgun(playerId) {
-  S.shotgunQueue=S.shotgunQueue.filter(s=>s.player!==playerId);
-  const p=PLAYERS.find(x=>x.id===playerId);
-  pushFeedPost({type:'system', playerId:'system', team:'system', text:`Captain waived ${p?.name}'s shotgun obligation.`});
+function waiveShotgun(gid) {
+  const g = S.groups[gid];
+  if (!g || !g.shotgunDue) return;
+  const names = (g.players||[]).map(id=>PLAYERS.find(p=>p.id===id)).filter(Boolean).map(p=>p.name.split(' ')[0]).join(' & ');
+  delete g.shotgunDue;
+  saveGroupsLocal();
+  pushFeedPost({type:'system', playerId:'system', team:'system', text:`Captain waived ${names}'s shotgun obligation.`});
   switchCaptainTab('admin');
 }
 
@@ -4172,7 +4209,7 @@ function attachSyncListeners() {
 
 // ── LIVE APP UPDATES ──
 // Must match the numeric suffix of CACHE in sw.js — bump both on every deploy.
-const APP_VERSION = 14;
+const APP_VERSION = 15;
 let _updatePrompted = false;
 
 function promptAppUpdate() {
