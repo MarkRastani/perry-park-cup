@@ -1081,6 +1081,22 @@ body{font-family:'Instrument Sans',-apple-system,BlinkMacSystemFont,sans-serif;b
 .mu-dash{color:var(--tx)}
 tr.mu-half td{background:var(--bg2);font-size:13px;font-weight:800;color:var(--t2)}
 tr.mu-total td{background:linear-gradient(180deg,#0A3020,#0D3828);color:#fff;font-size:13px;font-weight:800}
+
+/* ── FEED COMPOSER & PHOTOS ── */
+#composer-modal{position:fixed;inset:0;z-index:210;display:none;align-items:flex-end;justify-content:center}
+#composer-modal.open{display:flex}
+.composer-sheet{padding:0 20px calc(var(--sb) + 20px)}
+.composer-title{font-family:'Bricolage Grotesque',sans-serif;font-size:19px;font-weight:800;color:var(--t1);margin-bottom:12px}
+.composer-text{width:100%;min-height:96px;border:1.5px solid var(--border2);border-radius:14px;padding:12px 14px;font-family:'Instrument Sans',sans-serif;font-size:15px;color:var(--t1);background:var(--card2);resize:none;outline:none}
+.composer-text:focus{border-color:var(--g3)}
+.composer-photo-preview{margin-top:10px}
+.composer-photo-preview img{max-width:100%;max-height:200px;border-radius:12px;display:block}
+.composer-actions{display:flex;gap:10px;margin-top:14px}
+.composer-photo-btn{display:flex;align-items:center;gap:7px;padding:12px 18px;border-radius:12px;border:1.5px solid var(--border2);background:var(--card);color:var(--tm);font-family:'Instrument Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer}
+.composer-post-btn{flex:1;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--g2),var(--g3));color:#fff;font-family:'Instrument Sans',sans-serif;font-size:15px;font-weight:700;cursor:pointer}
+.composer-post-btn:disabled{opacity:.5}
+.fp-photo{margin:0 14px 12px;border-radius:12px;overflow:hidden}
+.fp-photo img{width:100%;display:block;max-height:340px;object-fit:cover}
 </style>
 </head>
 <body>
@@ -1288,6 +1304,25 @@ tr.mu-total td{background:linear-gradient(180deg,#0A3020,#0D3828);color:#fff;fon
   <div id="profile-modal">
     <div class="profile-backdrop" onclick="closeProfile()"></div>
     <div class="profile-sheet" id="profile-sheet-content"></div>
+  </div>
+
+  <!-- FEED COMPOSER -->
+  <div id="composer-modal">
+    <div class="profile-backdrop" onclick="closeComposer()"></div>
+    <div class="profile-sheet composer-sheet">
+      <div class="profile-pill"></div>
+      <div class="composer-title">New Post</div>
+      <textarea class="composer-text" id="composer-text" placeholder="Say something to the group..." maxlength="400"></textarea>
+      <div class="composer-photo-preview" id="composer-photo-preview"></div>
+      <div class="composer-actions">
+        <button class="composer-photo-btn" onclick="document.getElementById('composer-photo-input').click()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="4"/><path d="M9 6l1.5-2.5h3L15 6"/></svg>
+          Photo
+        </button>
+        <button class="composer-post-btn" id="composer-post-btn" onclick="submitPost()">Post</button>
+      </div>
+      <input type="file" id="composer-photo-input" accept="image/*" style="display:none" onchange="composerPhotoChange(this)">
+    </div>
   </div>
 
   <!-- PROFILE SETUP MODAL -->
@@ -1548,6 +1583,14 @@ function getProfile(playerId) {
 function saveProfileData(playerId, data) {
   localStorage.setItem('profile_' + playerId, JSON.stringify(data));
   _sync('profiles/' + playerId, data);
+}
+
+// Role-based access: built-in captains/admins, plus admin grants stored on synced profiles
+function isAdminUser(p) {
+  if (!p) return false;
+  if (['captain','admin'].includes(p.role)) return true;
+  const prof = getProfile(p.id);
+  return !!(prof && prof.isAdmin);
 }
 
 function getPlayerAvatar(player) {
@@ -1861,7 +1904,7 @@ function showApp() {
   document.getElementById('nav').style.display = 'flex';
   updateHeaderAvatar();
   const captBtn = document.getElementById('captain-btn');
-  if (['captain','admin'].includes(S.user.role)) captBtn.style.display = 'flex';
+  captBtn.style.display = isAdminUser(S.user) ? 'flex' : 'none';
   restoreRoundStatus();
   findMyGroup();
   navigate('scores');
@@ -2491,8 +2534,8 @@ function renderFeed() {
 
 function renderFeedPost(post) {
   const player = post.playerId==='system' ? null : PLAYERS.find(p=>p.id===post.playerId);
-  const typeMap = {birdie_alert:'birdie',bogey_alert:'bogey',score_event:'system',shotgun_video:'shotgun',lead_change:'lead',manual_post:'system'};
-  const typeLabelMap = {birdie_alert:'Birdie',bogey_alert:'Bogey',score_event:'Score',shotgun_video:'🍺 Shotgun',lead_change:'Lead Change',manual_post:'Post',system:'Update'};
+  const typeMap = {birdie_alert:'birdie',eagle_alert:'birdie',bogey_alert:'bogey',three_putt:'bogey',score_event:'system',shotgun_video:'shotgun',lead_change:'lead',round_complete:'lead',manual_post:'system',photo_post:'system'};
+  const typeLabelMap = {birdie_alert:'Birdie',eagle_alert:'Eagle',bogey_alert:'Bogey',three_putt:'3-Putt',score_event:'Score',shotgun_video:'🍺 Shotgun',lead_change:'Lead Change',round_complete:'Round Final',manual_post:'Post',photo_post:'Photo',system:'Update'};
   const reactions = S.reactions[post.id]||{};
   const myReactions = Object.entries(reactions).filter(([,players])=>players.includes(S.user.id)).map(([e])=>e);
   const avCls = post.type==='shotgun_video'?'shotgun-av':player?player.team:'system';
@@ -2503,11 +2546,12 @@ function renderFeedPost(post) {
         <div class="fp-avatar ${avCls}">${av}</div>
         <div class="fp-meta">
           <div class="fp-name">${player?player.name:'Perry Park Cup'}</div>
-          <div class="fp-time">${post.time}</div>
+          <div class="fp-time">${feedTime(post)}</div>
         </div>
         <div class="fp-type-badge ${typeMap[post.type]||'system'}">${typeLabelMap[post.type]}</div>
       </div>
       ${post.shotgun?`<div class="fp-shotgun-alert"><div class="fp-sa-icon">🍺</div><div class="fp-sa-text"><strong>Shotgun Obligation Created</strong>${post.text.replace(/<[^>]+>/g,'').split('.')[0]}. Shotgun required!</div></div>`:`<div class="fp-body">${post.text}</div>`}
+      ${post.photo?`<div class="fp-photo"><img src="${post.photo}" loading="lazy"></div>`:''}
       <div class="fp-reactions">
         ${Object.entries(REACTION_EMOJIS).map(([key,emoji])=>{
           const count=(reactions[key]||[]).length;
@@ -2571,6 +2615,17 @@ function renderRules() {
     <div class="page-bottom"></div>`;
 }
 // ── EVENT HANDLERS ──
+// Score display helpers (used by the entry cards)
+function scoreColor(s, par) {
+  const d = s - par;
+  return d <= -1 ? 'var(--bir)' : d === 0 ? 'var(--t2)' : d === 1 ? 'var(--orange)' : 'var(--dbl)';
+}
+function scoreLabel(s, par) {
+  const d = s - par;
+  return s === 1 ? 'Ace!' : d <= -3 ? 'Albatross' : d === -2 ? 'Eagle' : d === -1 ? 'Birdie'
+       : d === 0 ? 'Par' : d === 1 ? 'Bogey' : d === 2 ? 'Double' : `+${d}`;
+}
+
 function attachTabEvents() {
   if (S.tab === 'map') initMapboxMap();
 }
@@ -2633,9 +2688,12 @@ function saveGroupScore() {
   const putts = S.groupEntryPutts !== undefined ? S.groupEntryPutts : 2;
   if (!group.scores) group.scores = {};
   if (!group.putts) group.putts = {};
+  const firstEntry = group.scores[h] == null;
+  const leaderBefore = liveCupScore().leader;
   group.scores[h] = sc;
   group.putts[h] = putts;
   if (putts >= 3) setTimeout(()=>openShotgunModal(S.user.id, h, '3-putt'), 500);
+  if (firstEntry) postScoreEvents(group, h, sc, putts, par, leaderBefore);
   group.currentHole = Math.min(18, h+1);
   const nextH = group.currentHole;
   S.groupEntryScore = group.scores[nextH] || PARS[nextH-1];
@@ -2643,6 +2701,42 @@ function saveGroupScore() {
   saveGroupsLocal();
   if (navigator.vibrate) navigator.vibrate([50]);
   render();
+}
+
+// Live cup score: completed matchup points plus current leads in live matchups
+function liveCupScore() {
+  let nic=0, pal=0;
+  ROUNDS.forEach(r=>computeMatchups(r).forEach(m=>{
+    if (m.done) { nic+=m.nicPts; pal+=m.palPts; }
+    else if (m.common>0) { if (m.diff<0) nic++; else if (m.diff>0) pal++; else { nic+=.5; pal+=.5; } }
+  }));
+  return {nic, pal, leader: nic>pal?'nicklaus':pal>nic?'palmer':null};
+}
+
+// Automatic feed events fired on first score entry for a hole
+function postScoreEvents(group, h, sc, putts, par, leaderBefore) {
+  const combo = comboFor(group.roundId);
+  const holeLbl = combo.holeLabels[h-1] || `Hole ${h}`;
+  const members = (group.players||[]).map(id=>PLAYERS.find(p=>p.id===id)).filter(Boolean);
+  const names = members.map(p=>p.name.split(' ')[0]).join(' & ');
+  const team = members[0] ? members[0].team : S.user.team;
+  const d = sc - par;
+  const base = {playerId:S.user.id, team};
+
+  if (d <= -2) pushFeedPost({...base, type:'eagle_alert', text:`🦅 <strong>${names}</strong> made ${sc===1?'a HOLE-IN-ONE':d<=-3?'an ALBATROSS':'an EAGLE'} on ${holeLbl} (par ${par})!`});
+  else if (d === -1) pushFeedPost({...base, type:'birdie_alert', text:`🐦 <strong>${names}</strong> birdied ${holeLbl}`});
+  if (putts >= 3) pushFeedPost({...base, type:'three_putt', text:`<strong>${names}</strong> 3-putted ${holeLbl}. Shotgun time! 🍺`});
+
+  if (Object.keys(group.scores).length >= 18) {
+    const pars = combo.pars.reduce((a,b)=>a+b,0);
+    const tot = Object.values(group.scores).reduce((a,b)=>a+b,0);
+    pushFeedPost({...base, type:'round_complete', text:`🏁 <strong>${names}</strong> finished their round: ${tot} (${fmtToPar(tot-pars)})`});
+  }
+
+  const after = liveCupScore();
+  if (after.leader && after.leader !== leaderBefore) {
+    pushFeedPost({type:'lead_change', playerId:'system', team:'system', text:`👑 <strong>${TEAMS[after.leader].name}</strong> takes the lead in the cup!`});
+  }
 }
 
 function groupChangeHole(dir) {
@@ -2727,15 +2821,78 @@ function showHoleInfo(h) {
   alert(`Hole ${h} · Par ${par}\n${players.length?'Players nearby: '+players.map(p=>p.name).join(', '):'No players nearby'}`);
 }
 
-function newPost() {
-  const text = prompt('What do you want to post?');
-  if (text && text.trim()) {
-    const post = {id:'f'+Date.now(),type:'manual_post',playerId:S.user.id,team:S.user.team,time:'Just now',text:`<strong>${S.user.name}</strong>: ${text}`,shotgun:false,reactions:{}};
-    FEED_POSTS.unshift(post);
-    S.reactions[post.id]={};
-    render();
-  }
+// Central helper: every feed post flows through here (unshift also publishes to Firebase)
+function pushFeedPost(fields) {
+  const post = {id:'f'+Date.now()+Math.random().toString(36).slice(2,6),time:'Just now',ts:Date.now(),shotgun:false,reactions:{},...fields};
+  FEED_POSTS.unshift(post);
+  S.reactions[post.id]={};
+  if (S.tab==='feed') render();
+  return post;
 }
+
+function feedTime(post) {
+  if (!post.ts) return post.time || '';
+  const s = Math.floor((Date.now()-post.ts)/1000);
+  if (s < 60) return 'Just now';
+  if (s < 3600) return Math.floor(s/60)+'m ago';
+  if (s < 86400) return Math.floor(s/3600)+'h ago';
+  return new Date(post.ts).toLocaleDateString(undefined,{month:'short',day:'numeric'});
+}
+
+let _composerPhoto = null;
+
+function newPost() {
+  _composerPhoto = null;
+  document.getElementById('composer-text').value = '';
+  document.getElementById('composer-photo-preview').innerHTML = '';
+  document.getElementById('composer-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('composer-text').focus(), 100);
+}
+
+function closeComposer() { document.getElementById('composer-modal').classList.remove('open'); }
+
+function composerPhotoChange(input) {
+  const file = input.files && input.files[0];
+  input.value = '';
+  if (!file) return;
+  compressImage(file, 900, .72, dataUrl => {
+    _composerPhoto = dataUrl;
+    document.getElementById('composer-photo-preview').innerHTML = `<img src="${dataUrl}">`;
+  });
+}
+
+function compressImage(file, maxDim, quality, cb) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width*scale);
+      canvas.height = Math.round(img.height*scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      cb(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function submitPost() {
+  const text = document.getElementById('composer-text').value.trim();
+  if (!text && !_composerPhoto) return;
+  pushFeedPost({
+    type: _composerPhoto ? 'photo_post' : 'manual_post',
+    playerId: S.user.id, team: S.user.team,
+    text: text ? `<strong>${S.user.name}</strong>: ${escapeHTML(text)}` : `<strong>${S.user.name}</strong> shared a photo`,
+    photo: _composerPhoto || null,
+  });
+  closeComposer();
+  if (navigator.vibrate) navigator.vibrate([40]);
+  if (S.tab!=='feed') navigate('feed');
+}
+
+function escapeHTML(s){ return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 // ── SHOTGUN ──
 function checkShotgunQueue() {
@@ -2763,9 +2920,7 @@ function closeShotgunModal() {
 function recordShotgun() {
   closeShotgunModal();
   S.shotgunQueue.shift();
-  FEED_POSTS.unshift({id:'f'+Date.now(),type:'shotgun_video',playerId:S.user.id,team:S.user.team,time:'Just now',text:`<strong>${S.user.name}</strong> completed their shotgun! 🍺🎥`,shotgun:false,reactions:{}});
-  S.reactions['f'+Date.now()]={};
-  if (S.tab==='feed') render();
+  pushFeedPost({type:'shotgun_video', playerId:S.user.id, team:S.user.team, text:`<strong>${S.user.name}</strong> completed their shotgun! 🍺🎥`});
 }
 
 // ── PROFILE ──
@@ -2773,7 +2928,8 @@ function openProfile() {
   const p = S.user;
   const prof = getProfile(p.id);
   const av = getPlayerAvatar(p);
-  const stats = {handicap:p.handicap,birdies:2,shotguns:S.pendingShotguns[p.id]?1:0};
+  const myStats = computePlayerStats().find(x=>x.id===p.id) || {birdies:0,threePutts:0};
+  const stats = {handicap:p.handicap,birdies:myStats.birdies,shotguns:myStats.threePutts};
   const motto = prof && prof.motto ? prof.motto : '';
 
   document.getElementById('profile-sheet-content').innerHTML = `
@@ -2798,7 +2954,7 @@ function openProfile() {
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         Edit Profile
       </div>
-      ${p.role==='captain'?`<div class="profile-action-btn" style="background:linear-gradient(135deg,rgba(200,160,48,.12),rgba(200,160,48,.06));border-color:rgba(200,160,48,.35);color:#A8843A;font-weight:700" onclick="closeProfile();openCaptainPanel()"><svg width="14" height="14" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:6px"><path d="M2 19l3-10 7 5 7-5 3 10H2zm10-16a2 2 0 1 1 0 4 2 2 0 0 1 0-4z" fill="#C8A030"/></svg>Open Captain Panel</div>`:''}
+      ${isAdminUser(p)?`<div class="profile-action-btn" style="background:linear-gradient(135deg,rgba(200,160,48,.12),rgba(200,160,48,.06));border-color:rgba(200,160,48,.35);color:#A8843A;font-weight:700" onclick="closeProfile();openCaptainPanel()"><svg width="14" height="14" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:6px"><path d="M2 19l3-10 7 5 7-5 3 10H2zm10-16a2 2 0 1 1 0 4 2 2 0 0 1 0-4z" fill="#C8A030"/></svg>Open Captain Panel</div>`:''}
       <div class="profile-action-btn" onclick="closeProfile();navigate('map');updateLocation()">📍 Update My Location</div>
       <div class="logout-btn" onclick="logout()">Sign Out</div>
     </div>`;
@@ -2828,8 +2984,8 @@ function logout() {
 
 // ── CAPTAIN PANEL ──
 function openCaptainPanel() {
-  if (!['captain','admin'].includes(S.user.role)) return;
-  document.getElementById('captain-who-label').textContent = `Captain · ${TEAMS[S.user.team].name}`;
+  if (!isAdminUser(S.user)) return;
+  document.getElementById('captain-who-label').textContent = `${S.user.role==='captain'?'Captain':'Admin'} · ${TEAMS[S.user.team].name}`;
   switchCaptainTab(S.captainTab);
   document.getElementById('captain-modal').classList.add('open');
 }
@@ -2962,8 +3118,45 @@ function completeRound(roundId) {
 function setScorekeeper(matchId,playerId) { const m=MATCHES.find(x=>x.id===matchId); if(m) m.scorekeeperPlayerId=playerId; }
 
 function renderCaptainAdmin() {
+  const rid = S._adminScoreRound || (ROUNDS.find(r=>r.status==='active')||ROUNDS[0]).id;
+  const editGroups = Object.entries(S.groups).filter(([,g])=>g.roundId===rid);
+  const combo = comboFor(rid);
   return `
-    <div class="admin-section-title">Announcements</div>
+    <div class="admin-section-title">Edit Scores</div>
+    <div style="font-size:12px;color:var(--tm);margin-bottom:10px;font-weight:500">Fix any group's score for any hole. Changes sync to everyone instantly.</div>
+    <div class="sr-tt-grid" style="padding:0;margin-bottom:10px">
+      ${ROUNDS.map(r=>`<button class="admin-action-btn${r.id===rid?' amber':''}" onclick="setAdminScoreRound('${r.id}')" style="margin:0 6px 6px 0">${r.name}</button>`).join('')}
+    </div>
+    ${editGroups.length===0?`<div style="text-align:center;padding:14px;color:var(--tm);font-size:13px">No groups have started this round</div>`:editGroups.map(([gid,g])=>{
+      const names=(g.players||[]).map(id=>{const p=PLAYERS.find(x=>x.id===id);return p?p.name.split(' ')[0]:id;}).join(' & ');
+      return `<div class="admin-row" style="flex-direction:column;align-items:stretch">
+        <div class="admin-row-label" style="margin-bottom:8px">${names}</div>
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px">
+          ${Array.from({length:18},(_,i)=>{
+            const h=i+1, sc=g.scores&&g.scores[h];
+            return `<div style="text-align:center">
+              <div style="font-size:9px;font-weight:700;color:var(--tx)">${combo.holeLabels[i]}</div>
+              <input type="number" inputmode="numeric" min="1" max="15" value="${sc??''}" placeholder="·"
+                onchange="adminSetScore('${gid}',${h},this.value)"
+                style="width:100%;padding:5px 2px;text-align:center;border:1px solid var(--border2);border-radius:6px;font-size:14px;font-weight:700;background:${sc!=null?'var(--card)':'var(--card2)'}">
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+    }).join('')}
+    <div class="admin-section-title" style="margin-top:20px">Admin Access</div>
+    <div style="font-size:12px;color:var(--tm);margin-bottom:10px;font-weight:500">Grant trusted players access to this panel.</div>
+    ${PLAYERS.filter(p=>!['captain','admin'].includes(p.role)).map(p=>{
+      const granted = isAdminUser(p);
+      return `<div class="admin-row">
+        <div class="pst-player" style="gap:10px">
+          <div class="pst-av ${p.team}" style="width:32px;height:32px;font-size:12px">${getPlayerAvatar(p)||p.initials}</div>
+          <div><div class="admin-row-label">${p.name}</div><div class="admin-row-sub">${granted?'Admin access granted':'Player'}</div></div>
+        </div>
+        <button class="admin-action-btn${granted?'':' amber'}" onclick="toggleAdminGrant('${p.id}')">${granted?'Revoke':'Make Admin'}</button>
+      </div>`;
+    }).join('')}
+    <div class="admin-section-title" style="margin-top:20px">Announcements</div>
     <textarea class="announce-textarea" id="announce-text" placeholder="Type an announcement to all players..."></textarea>
     <button class="save-pairings-btn" onclick="sendAnnouncement()" style="margin-top:8px">📢 Send to Feed</button>
     <div class="admin-section-title" style="margin-top:20px">Player PINs</div>
@@ -2980,10 +3173,29 @@ function renderCaptainAdmin() {
     ${S.shotgunQueue.length===0?`<div style="text-align:center;padding:20px;color:var(--tm);font-size:13px">No pending shotguns 🍺</div>`:S.shotgunQueue.map(sq=>{const p=PLAYERS.find(x=>x.id===sq.player);return `<div class="admin-row"><div><div class="admin-row-label">${p?.name} — Hole ${sq.hole}</div><div class="admin-row-sub">Bogey · ${TEAMS[sq.team]?.name}</div></div><button class="admin-action-btn amber" onclick="waiveShotgun('${sq.player}')">Waive</button></div>`;}).join('')}`;
 }
 
+function setAdminScoreRound(id) { S._adminScoreRound = id; switchCaptainTab('admin'); }
+
+function adminSetScore(gid, h, val) {
+  const g = S.groups[gid];
+  if (!g) return;
+  if (!g.scores) g.scores = {};
+  const n = parseInt(val, 10);
+  if (!n || n < 1) { delete g.scores[h]; if (g.putts) delete g.putts[h]; }
+  else g.scores[h] = Math.min(15, n);
+  saveGroupsLocal();
+  if (navigator.vibrate) navigator.vibrate([30]);
+}
+
+function toggleAdminGrant(pid) {
+  const prof = getProfile(pid) || {};
+  saveProfileData(pid, {...prof, isAdmin: !prof.isAdmin});
+  switchCaptainTab('admin');
+}
+
 function sendAnnouncement() {
   const text=document.getElementById('announce-text').value.trim();
   if (!text) return;
-  FEED_POSTS.unshift({id:'f'+Date.now(),type:'system',playerId:'system',team:'system',time:'Just now',text:`📢 <strong>Captain Announcement:</strong> ${text}`,shotgun:false,reactions:{}});
+  pushFeedPost({type:'system', playerId:'system', team:'system', text:`📢 <strong>Captain Announcement:</strong> ${escapeHTML(text)}`});
   document.getElementById('announce-text').value='';
   if (navigator.vibrate) navigator.vibrate([50]);
   alert('Announcement sent!');
@@ -3000,7 +3212,7 @@ function resetPin(playerId,name) {
 function waiveShotgun(playerId) {
   S.shotgunQueue=S.shotgunQueue.filter(s=>s.player!==playerId);
   const p=PLAYERS.find(x=>x.id===playerId);
-  FEED_POSTS.unshift({id:'f'+Date.now(),type:'system',playerId:'system',team:'system',time:'Just now',text:`Captain waived ${p?.name}'s shotgun obligation.`,shotgun:false,reactions:{}});
+  pushFeedPost({type:'system', playerId:'system', team:'system', text:`Captain waived ${p?.name}'s shotgun obligation.`});
   switchCaptainTab('admin');
 }
 
@@ -3368,7 +3580,11 @@ function initSync() {
         changed = true;
       }
     });
-    if (changed && S.user) render();
+    if (changed && S.user) {
+      const btn = document.getElementById('captain-btn');
+      if (btn) btn.style.display = isAdminUser(S.user) ? 'flex' : 'none';
+      render();
+    }
   });
 
   _fdb.ref('sync/pins').on('value', s => {
