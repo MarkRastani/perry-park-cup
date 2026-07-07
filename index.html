@@ -590,7 +590,7 @@ body{font-family:'Instrument Sans',-apple-system,BlinkMacSystemFont,sans-serif;b
 #shotgun-modal{position:fixed;inset:0;z-index:200;display:none;align-items:flex-end;justify-content:center}
 #shotgun-modal.open{display:flex}
 .shotgun-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-.shotgun-sheet{position:relative;background:var(--card);width:100%;max-width:480px;border-radius:28px 28px 0 0;padding:0 0 calc(var(--sb) + 24px);animation:slide-up .35s cubic-bezier(0.34,1.56,0.64,1);box-shadow:0 -8px 48px rgba(0,0,0,.25)}
+.shotgun-sheet{position:relative;background:var(--card);width:100%;max-width:480px;border-radius:28px 28px 0 0;padding:0 0 calc(var(--sb) + 24px);animation:slide-up .35s cubic-bezier(0.34,1.56,0.64,1);box-shadow:0 -8px 48px rgba(0,0,0,.25);max-height:88vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .shotgun-pill{width:40px;height:5px;background:var(--border);border-radius:4px;margin:14px auto}
 .shotgun-alert-header{text-align:center;padding:4px 24px 20px}
 .shotgun-emoji{font-size:72px;display:block;margin-bottom:12px;animation:bounce-beer 1s ease-in-out infinite}
@@ -836,6 +836,9 @@ body{font-family:'Instrument Sans',-apple-system,BlinkMacSystemFont,sans-serif;b
 .ca-upload-btn{width:100%;padding:13px;border-radius:14px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:#fff;font-family:'Bricolage Grotesque',sans-serif;font-size:18px;font-weight:700;cursor:pointer;margin-bottom:14px;-webkit-tap-highlight-color:transparent}
 .ca-or{text-align:center;font-size:11px;color:rgba(255,255,255,.28);font-weight:700;letter-spacing:1px;margin-bottom:12px}
 .ca-emoji-grid{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:16px}
+.avatar-grid.expanded{grid-template-columns:repeat(6,1fr);gap:8px;max-height:264px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:2px}
+.ca-emoji-grid.expanded{max-height:220px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.avatar-more{font-size:22px;font-weight:600;color:var(--tm)}
 .ca-emoji-opt{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;background:rgba(255,255,255,.07);border:2px solid transparent;transition:all .15s;-webkit-tap-highlight-color:transparent}
 .ca-emoji-opt.selected{border-color:var(--gold3);background:rgba(200,160,48,.15)}
 .ca-next-btn{width:100%;padding:14px;border-radius:16px;border:none;cursor:pointer;background:linear-gradient(135deg,var(--g1),var(--g2));color:#fff;font-family:'Bricolage Grotesque',sans-serif;font-size:20px;font-weight:900;box-shadow:0 4px 18px rgba(21,88,64,.35);margin-top:4px}
@@ -1115,9 +1118,54 @@ tr.mu-total td{background:linear-gradient(180deg,#0A3020,#0D3828);color:#fff;fon
 .fpc-send{width:36px;height:36px;border-radius:50%;border:none;background:linear-gradient(135deg,var(--g2),var(--g3));color:#fff;font-size:15px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center}
 .fp-photo{margin:0 14px 12px;border-radius:12px;overflow:hidden}
 .fp-photo img{width:100%;display:block;max-height:340px;object-fit:cover}
+/* ── SPLASH ── */
+#splash{
+  position:fixed;inset:0;z-index:999;display:flex;align-items:center;justify-content:center;
+  background:#030C06;
+  transition:opacity .55s ease;
+}
+#splash::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 160% 90% at 50% 115%, rgba(18,76,52,.85) 0%, transparent 58%),
+    radial-gradient(ellipse 55% 35% at 75% 4%, rgba(168,132,58,.09) 0%, transparent 55%);
+}
+#splash.done{opacity:0;pointer-events:none}
+.splash-inner{position:relative;display:flex;flex-direction:column;align-items:center;animation:ppc-fadein .6s ease both}
+.splash-logo{
+  width:96px;height:96px;border-radius:26px;overflow:hidden;
+  box-shadow:0 0 0 1px rgba(255,255,255,.14),0 0 0 6px rgba(200,160,48,.08),0 0 60px rgba(200,160,48,.12),0 24px 64px rgba(0,0,0,.7);
+}
+.splash-logo img{width:100%;height:100%;display:block;object-fit:cover}
+.splash-word{margin-top:26px;text-align:center;font-family:'Cormorant Garamond',Georgia,serif;line-height:1}
+.splash-line1{display:block;font-size:30px;font-weight:400;font-style:italic;color:rgba(255,255,255,.9)}
+.splash-line2{
+  display:block;font-size:44px;font-weight:700;letter-spacing:-1.5px;margin-top:2px;
+  background:linear-gradient(135deg,#C8A030 0%,#F0D060 40%,#C8A030 60%,#E8BE40 100%);
+  background-size:200% auto;
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  animation:gold-shimmer 4s linear infinite;
+}
+.splash-bar{
+  width:56px;height:2px;border-radius:2px;margin-top:28px;
+  background:linear-gradient(90deg,transparent,rgba(200,160,48,.15),rgba(232,190,64,.8),rgba(200,160,48,.15),transparent);
+  background-size:200% auto;animation:gold-shimmer 1.6s linear infinite;
+}
 </style>
 </head>
 <body>
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-inner">
+    <div class="splash-logo"><img src="images/app-logo.png" alt=""></div>
+    <div class="splash-word">
+      <span class="splash-line1">Perry Park</span>
+      <span class="splash-line2">CUP</span>
+    </div>
+    <div class="splash-bar"></div>
+  </div>
+</div>
+
 <div id="app">
 
   <!-- LOGIN -->
@@ -1564,6 +1612,21 @@ const HOLE_COORDS_GPS = [
 ];
 
 const PROFILE_AVATARS = ['⛳','🏌️','🦅','🏆','🔥','⚡','💎','👑','🎯','🦁','❄️','🎳'];
+// Full library shown when the picker is expanded
+const EMOJI_LIBRARY = [
+  '⛳','🏌️','🦅','🏆','🥇','🥈','🥉','🎯','🎳','⚡','🔥','💎','👑','🍺','🍻','🥃','🍹','🥂','🍾','🏁',
+  '😀','😁','😂','🤣','😅','😆','😉','😊','😎','🤩','🥳','😏','😤','🤠','🥸','🤓','😈','🤡','👻','💀',
+  '🤖','👽','🎃','😺','🙈','🙉','🙊','💪','👊','✊','🤙','🤘','👍','👎','🙏','🫡','🤝','✌️','🤞','👏',
+  '🦁','🐯','🐻','🐼','🐨','🦊','🐺','🐶','🐱','🐭','🐹','🐰','🦝','🦍','🦧','🐗','🐴','🦄','🐮','🐷',
+  '🐸','🐔','🐧','🦆','🦢','🦉','🦇','🐍','🐢','🦎','🐊','🦈','🐬','🐳','🐙','🦀','🦞','🦂','🦋','🐝',
+  '🌵','🌲','🌳','🌴','🍀','🌿','🍁','🌾','🌸','🌞','🌝','🌛','⭐','🌟','✨','💫','☄️','🌈','☀️','⛅',
+  '🌧️','⛈️','🌩️','❄️','☃️','🌊','💧','🌪️','🌫️','🌀',
+  '🍒','🍑','🍉','🍌','🍍','🥥','🥑','🌶️','🌽','🍕','🍔','🌭','🌮','🍟','🍗','🥩','🍩','🍪','🎂','☕',
+  '⚽','🏀','🏈','⚾','🎾','🏐','🏉','🎱','🏓','🏸','🥊','🥋','🎿','🛷','🏹','🎣','🛹','🛼','🏇','🧗',
+  '🚗','🏎️','🚓','🚑','🚒','🚜','🛵','🏍️','🚁','✈️','🚀','🛸','⛵','🚤','⚓','🗿','🗽','🌋','🏔️','🏕️',
+  '🎸','🥁','🎺','🎷','🎹','🎤','🎧','🎮','🕹️','🎲','🃏','🀄','🎰','🧨','💣','🔫','🗡️','⚔️','🛡️','🔮',
+  '💰','💵','💸','🪙','💳','⌚','📱','💻','📷','🔦','🕶️','🎩','🧢','⛑️','💍','💯','✅','❌','⁉️','🆘',
+];
 
 const S = {
   user: null, pin: '', selectedPlayer: null,
@@ -1730,6 +1793,7 @@ function showCreateAccount() {
   document.getElementById('ll-signin').style.display = 'none';
   document.getElementById('ll-create').style.display = 'block';
   Object.assign(CA, {player:null,pin:'',pinConfirm:'',pinStep:'first',profilePic:null,avatar:null});
+  _caEmojiExpanded = false;
   caGoTo(1);
   buildCreateGrid();
 }
@@ -1791,6 +1855,8 @@ function updateCaPinDots() {
   for(let i=0;i<4;i++) document.getElementById('capd'+i).classList.toggle('filled',i<CA.pin.length);
 }
 
+let _caEmojiExpanded = false;
+
 function initCaPhotoStep() {
   const preview = document.getElementById('ca-photo-preview');
   if(CA.profilePic) {
@@ -1801,9 +1867,11 @@ function initCaPhotoStep() {
     preview.innerHTML = '<span style="font-size:36px;opacity:.4">📷</span>';
   }
   const grid = document.getElementById('ca-emoji-grid');
-  grid.innerHTML = PROFILE_AVATARS.map(e =>
+  const list = _caEmojiExpanded ? EMOJI_LIBRARY : PROFILE_AVATARS;
+  if (grid.classList) grid.classList.toggle('expanded', _caEmojiExpanded);
+  grid.innerHTML = list.map(e =>
     `<div class="ca-emoji-opt${CA.avatar===e?' selected':''}" id="ca-em-${e.codePointAt(0)}" onclick="caSelectEmoji('${e}')">${e}</div>`
-  ).join('');
+  ).join('') + (_caEmojiExpanded ? '' : `<div class="ca-emoji-opt avatar-more" onclick="_caEmojiExpanded=true;initCaPhotoStep()">＋</div>`);
 }
 
 function formatPhoneInput(input) {
@@ -1962,16 +2030,25 @@ function showProfileSetup(isEdit) {
   el.classList.add('open');
 
   // Init avatar grid
-  const grid = document.getElementById('avatar-grid');
-  grid.innerHTML = PROFILE_AVATARS.map(e => `
-    <div class="avatar-option ${S.setupAvatar===e?'selected':''}" onclick="selectSetupAvatar('${e}')" id="av-opt-${e.codePointAt(0)}">${e}</div>
-  `).join('');
+  _setupEmojiExpanded = false;
+  renderSetupAvatarGrid();
 
   updateSetupPreview();
   updateSetupStepUI();
 
   document.getElementById('setup-next-btn').textContent = 'Continue →';
   document.getElementById('setup-skip-link').style.display = isEdit ? 'none' : 'block';
+}
+
+let _setupEmojiExpanded = false;
+
+function renderSetupAvatarGrid() {
+  const grid = document.getElementById('avatar-grid');
+  const list = _setupEmojiExpanded ? EMOJI_LIBRARY : PROFILE_AVATARS;
+  if (grid.classList) grid.classList.toggle('expanded', _setupEmojiExpanded);
+  grid.innerHTML = list.map(e => `
+    <div class="avatar-option ${S.setupAvatar===e?'selected':''}" onclick="selectSetupAvatar('${e}')" id="av-opt-${e.codePointAt(0)}">${e}</div>
+  `).join('') + (_setupEmojiExpanded ? '' : `<div class="avatar-option avatar-more" onclick="_setupEmojiExpanded=true;renderSetupAvatarGrid()">＋</div>`);
 }
 
 function selectSetupAvatar(emoji) {
@@ -2564,8 +2641,8 @@ function renderFeed() {
 
 function renderFeedPost(post) {
   const player = post.playerId==='system' ? null : PLAYERS.find(p=>p.id===post.playerId);
-  const typeMap = {birdie_alert:'birdie',eagle_alert:'birdie',bogey_alert:'bogey',three_putt:'bogey',score_event:'system',shotgun_video:'shotgun',lead_change:'lead',round_complete:'lead',manual_post:'system',photo_post:'system',video_post:'system'};
-  const typeLabelMap = {birdie_alert:'Birdie',eagle_alert:'Eagle',bogey_alert:'Bogey',three_putt:'3-Putt',score_event:'Score',shotgun_video:'🍺 Shotgun',lead_change:'Lead Change',round_complete:'Round Final',manual_post:'Post',photo_post:'Photo',video_post:'Video',system:'Update'};
+  const typeMap = {birdie_alert:'birdie',eagle_alert:'birdie',bogey_alert:'bogey',three_putt:'bogey',score_event:'system',shotgun_video:'shotgun',lead_change:'lead',round_complete:'lead',manual_post:'system',photo_post:'system',video_post:'system',milestone:'lead'};
+  const typeLabelMap = {birdie_alert:'Birdie',eagle_alert:'Eagle',bogey_alert:'Bogey',three_putt:'3-Putt',score_event:'Score',shotgun_video:'🍺 Shotgun',lead_change:'Lead Change',round_complete:'Round Final',manual_post:'Post',photo_post:'Photo',video_post:'Video',milestone:'Milestone',system:'Update'};
   const reactions = S.reactions[post.id]||{};
   const comments = postComments(post.id);
   const myReactions = Object.entries(reactions).filter(([,players])=>players.includes(S.user.id)).map(([e])=>e);
@@ -2799,6 +2876,55 @@ function postScoreEvents(group, h, sc, putts, par, leaderBefore) {
   if (after.leader && after.leader !== leaderBefore) {
     pushFeedPost({type:'lead_change', playerId:'system', team:'system', text:`👑 <strong>${TEAMS[after.leader].name}</strong> takes the lead in the cup!`});
   }
+
+  // Milestones: cup-wide birdie counts (this entry just made one of these numbers)
+  if (d <= -1) {
+    const n = cupBirdieCount();
+    if ([5,10,15,20,25,50].includes(n))
+      pushFeedPost({type:'milestone', playerId:'system', team:'system', text:`🎉 <strong>Milestone:</strong> that's birdie number ${n} of the Perry Park Cup — ${names} got it on ${holeLbl}!`});
+  }
+}
+
+// Birdies-or-better across every group in every round
+function cupBirdieCount() {
+  let n = 0;
+  Object.values(S.groups).forEach(g => {
+    const pars = comboFor(g.roundId).pars;
+    Object.entries(g.scores||{}).forEach(([h,s]) => { if (s != null && s - pars[h-1] <= -1) n++; });
+  });
+  return n;
+}
+
+// To-par over scored holes, using the round's own course combo
+function groupToPar(g, roundId) {
+  const pars = comboFor(roundId).pars;
+  let d = 0, holes = 0;
+  Object.entries(g.scores||{}).forEach(([h,s]) => { if (s != null) { d += s - pars[h-1]; holes++; } });
+  return holes ? {d, holes} : null;
+}
+
+// Biggest mover: pairing that improved most vs. their previous round (posted when a round is completed)
+function postBiggestMover(round) {
+  const i = ROUNDS.findIndex(r => r.id === round.id);
+  if (i <= 0) return;
+  const prev = ROUNDS[i-1];
+  const findG = (rid, pid) => Object.values(S.groups).find(g => g.roundId === rid && (g.players||[]).includes(pid));
+  let best = null;
+  const seen = new Set();
+  PLAYERS.forEach(p => {
+    if (seen.has(p.id)) return;
+    const gc = findG(round.id, p.id), gp = findG(prev.id, p.id);
+    if (!gc || !gp) return;
+    (gc.players||[]).forEach(id => seen.add(id));
+    const cur = groupToPar(gc, round.id), old = groupToPar(gp, prev.id);
+    if (!cur || !old || cur.holes < 9 || old.holes < 9) return;
+    const delta = old.d - cur.d;
+    if (!best || delta > best.delta) best = {delta, players: gc.players, cur: cur.d, old: old.d};
+  });
+  if (!best || best.delta < 1) return;
+  const names = best.players.map(id => PLAYERS.find(p => p.id === id)).filter(Boolean).map(p => p.name.split(' ')[0]).join(' & ');
+  pushFeedPost({type:'milestone', playerId:'system', team:'system',
+    text:`📈 <strong>Biggest movers:</strong> ${names} went from ${fmtToPar(best.old)} in ${prev.name} to ${fmtToPar(best.cur)} — ${best.delta} strokes better!`});
 }
 
 function groupChangeHole(dir) {
@@ -3032,7 +3158,7 @@ function notifyPost(post) {
   const mentioned = S.user && body.toLowerCase().includes('@' + S.user.name.split(' ')[0].toLowerCase());
   if (!document.hidden && !mentioned) return;              // in-app + not mentioned → feed is enough
   const title = mentioned ? 'You were mentioned' :
-    {birdie_alert:'🐦 Birdie!',eagle_alert:'🦅 Eagle alert!',three_putt:'🍺 Shotgun time',lead_change:'👑 Lead change',round_complete:'🏁 Round complete',shotgun_video:'🍺 Shotgun done'}[post.type] || 'Perry Park Cup';
+    {birdie_alert:'🐦 Birdie!',eagle_alert:'🦅 Eagle alert!',three_putt:'🍺 Shotgun time',lead_change:'👑 Lead change',round_complete:'🏁 Round complete',shotgun_video:'🍺 Shotgun done',milestone:'🎉 Milestone'}[post.type] || 'Perry Park Cup';
   try {
     navigator.serviceWorker.getRegistration().then(reg => {
       if (reg && reg.showNotification) reg.showNotification(title, {body, icon:'./icons/icon-192.svg', badge:'./icons/icon-192.svg', tag:post.id, vibrate:[200,100,200]});
@@ -3262,6 +3388,7 @@ function completeRound(roundId) {
   r.status='completed';
   saveRoundStatus();
   pushFeedPost({type:'system',playerId:'system',team:'system',text:`<strong>${r.name} is complete!</strong> Check Standings for results. 🏆`});
+  postBiggestMover(r);
   switchCaptainTab('rounds');
   if (S.tab==='scores'||S.tab==='standings') render();
 }
@@ -3782,6 +3909,19 @@ MATCHES.forEach(m=>{
   const h=S.currentHoles[m.id];
   S.entryScores[m.id]={a:PARS[h-1],b:PARS[h-1]};
 });
+
+// Splash: hold ~900ms minimum, then fade out over the revealed screen
+(function(){
+  const t0 = Date.now();
+  const hide = () => setTimeout(() => {
+    const sp = document.getElementById('splash');
+    if (!sp || !sp.classList) return;
+    sp.classList.add('done');
+    setTimeout(()=>{ if (sp.remove) sp.remove(); }, 650);
+  }, Math.max(0, 900 - (Date.now() - t0)));
+  if (document.readyState === 'complete') hide();
+  else window.addEventListener('load', hide);
+})();
 
 initSync();
 initAuth();
